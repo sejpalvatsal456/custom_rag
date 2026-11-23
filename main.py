@@ -1,6 +1,7 @@
 from pathlib import Path
 from src.ingection.pdf_loader import load_pdf
 from src.processing.chunker import chunk_documents
+from src.embeddings.embedder import Embedder
 
 PDF_DIR = Path("data/documents")
 
@@ -29,6 +30,19 @@ def main():
   )
   
   print(f"Chunks: {len(chunks)}")
+  
+  embedder = Embedder()
+  
+  texts = [chunk['text'] for chunk in chunks]
+  
+  embeddings = embedder.generate_embedding(texts)
+  print("\nEmbedding generation completed!")
+
+  print("Number of embeddings:", embeddings.shape[0])
+  print("Dimensions per embedding:", embeddings.shape[1])
+
+  print("\nFirst embedding:")
+  print(embeddings[0].shape)
     
     
 if __name__ == '__main__':
