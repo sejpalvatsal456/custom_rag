@@ -2,8 +2,21 @@ from pathlib import Path
 from src.ingection.pdf_loader import load_pdf
 from src.processing.chunker import chunk_documents
 from src.embeddings.embedder import Embedder
+from src.processing.retriever import Retriever
 
 PDF_DIR = Path("data/documents")
+
+def show_result(results: list[dict]):
+  for result in results:
+
+    print("\n------------------------------")
+
+    print("Source:", result["source"])
+    print("Page:", result["page"])
+    print("Similarity:", round(result["similarity"], 4))
+
+    print("Content:")
+    print(result["text"])
 
 def main():
   pdf_files = list(PDF_DIR.glob("*.pdf"))
@@ -43,6 +56,14 @@ def main():
 
   print("\nFirst embedding:")
   print(embeddings[0].shape)
+  
+  retriever = Retriever(chunks, embeddings, embedder)
+  result = retriever.retrieve(
+    query="How does GPT use gossip and rumors in storytelling?",
+    top_k=5
+  )
+  
+  show_result(result)
     
     
 if __name__ == '__main__':
