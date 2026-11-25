@@ -12,7 +12,7 @@ class Retriever:
     self.embeddings = embeddings
     self.embedder = embedder
     
-  def retrieve(self, query: str, top_k: int = 5):
+  def retrieve(self, query: str, top_k: int = 5) -> list[dict]:
     if not query.strip():
       raise ValueError("Query can not be empty.")
     

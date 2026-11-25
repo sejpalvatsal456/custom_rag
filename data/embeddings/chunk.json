@@ -1,0 +1,776 @@
+[
+  {
+    "source": "StoryScope.pdf",
+    "page": 1,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nStoryScope: Investigating idiosyncrasies in AI fiction\nJenna Russell[, Rishanth Rajendhran[, Chau Minh Pham[, Mohit Iyyer[, John WietingC\nUniversity of Maryland, College Park[, Google DeepMindC\n{jennarus, rishanth, chau, miyyer}@umd.edu, jwieting@google.com\nAbstract\nAs AI-generated fiction becomes increasingly prevalent, questions of au-\nthorship and originality are becoming central to how written work is evalu-\nated. While most existing work in this space focuses on identifying surface-\nlevel signatures of AI writing (e.g., word choice, syntactic structure), we\nask instead whether AI-generated stories can be distinguished from human\nones without relying on stylistic signals, focusing on discourse-level narra-\ntive choices such as character agency and chronological discontinuity. We\npropose STORYSCOPE, a pipeline that automatically induces a fine-grained,\ninterpretable feature space of discourse-level narrative features across 10"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 1,
+    "chunk_id": 1,
+    "text": "propose STORYSCOPE, a pipeline that automatically induces a fine-grained,\ninterpretable feature space of discourse-level narrative features across 10 di-\nmensions (e.g., plot, agents, temporal structure). We apply STORYSCOPE to a\nparallel corpus of 10,272 writing prompts, each written by a human author\nand five LLMs (Claude, DeepSeek, Gemini , GPT, and Kimi), yielding 61,608\nstories, each ~5,000 words, and 304 extracted features per story.Narrative\nfeatures alone achieve 93.2% macro-F1 for human vs. AI detection and\n68.4% macro-F1 for six-way authorship attribution, retaining over 97% of\nthe performance of models that include stylistic cues. A compact set of 30\ncore narrative features captures much of this signal: AI stories over-explain\nthemes and favor tidy, single-track plots while human stories frame protag-\nonists’ choices as more morally ambiguous and have increased temporal\ncomplexity (e.g., flashbacks, nonlinear structure). Per-model fingerprint\nfeatures enable six-way"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 1,
+    "chunk_id": 2,
+    "text": "s more morally ambiguous and have increased temporal\ncomplexity (e.g., flashbacks, nonlinear structure). Per-model fingerprint\nfeatures enable six-way attribution: for example, Claude produces notably\nflat event escalation, GPT likes using gossip as a plot mechanism, and Gem-\nini defaults to external character description. We find that AI-generated\nstories cluster in a shared region of narrative space, while human-authored\nstories exhibit greater diversity. More broadly, these results suggest that\ndifferences in underlying narrative construction, not just writing style, can\nbe used to separate human-written original works from AI-generated fic-\ntion. We release the STORYSCOPE code, 10,272 writing prompts, and 51,336\nAI-generated narratives to support future work on narrative analysis and\nAI authorship.1\n1\nIntroduction\nAI fiction is already under our noses. In March 2026, Hachette, a major publishing house,\npulled the horror novel Shy Girl after it was flagged as ∼78% AI-generated, the"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 1,
+    "chunk_id": 3,
+    "text": "dy under our noses. In March 2026, Hachette, a major publishing house,\npulled the horror novel Shy Girl after it was flagged as ∼78% AI-generated, the first com-\nmercially published novel canceled over AI allegations. Nearly 20% of a sample of 14,000\nself-published Amazon novels were flagged by Pangram (Emi & Spero, 2024) as largely\nAI-generated, a figure that jumped 41% year-over-year.2 Overall, readers are increasingly\nbeing misled into purchasing AI-generated books attributed to human authors. If authors\nare unwilling to self-disclose AI usage, how can we address this issue?\nAt first glance, this appears to be a detection problem: can we determine whether a given\nstory was written by human or machine? Existing AI detectors (Hans et al., 2024; Adam et al.,\n2026; Thai et al., 2026) primarily rely on stylistic signals such as word choice and sentence\n1Code and data:"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 1,
+    "chunk_id": 4,
+    "text": "tectors (Hans et al., 2024; Adam et al.,\n2026; Thai et al., 2026) primarily rely on stylistic signals such as word choice and sentence\n1Code and data: https://github.com/jenna-russell/storyscope\n2https://www.nytimes.com/2026/03/19/books/ai-fiction-shy-girl.html\n1\narXiv:2604.03136v5  [cs.CL]  3 Aug 2026"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nStructured Narrative Representation\nper story\nWriting Prompt: Write a short story about Alistair Forsythe, \na brilliant metallurgist whose new Great Dane, Tiny, appears \nto be an exceptionally intelligent, even telepathic, dog ...\n\"The Forsythe Formulas\" by Claude Sonnet 4.6\nStory:\nThe dog arrived on a \nTuesday, which Alistair \nForsythe would later \nconsider significant, \nthough he could never \nexplain precisely why. \nTuesdays had always struck \nhim as the most honest day \nof the week—neither the \nfalse promise of Monday nor \nthe desperate relief of \nFriday. Tuesdays simply \nwere, and so, apparently, \nwas Tiny...\nTemplate:\n{\nagents: Alistair Forsythe,\n Tiny\nplot: Tiny helps his owner \nwith a scientific breakthrough\ntime: linearly over the course \nof the research project \nsetting: the lab, Forsythe’s \nhome, a riverine estate\nrevelation: Tiny is not just a \ndog but scientific genius\nperspective: third person \nlimited\nRepeated for each source"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 1,
+    "text": "sythe’s \nhome, a riverine estate\nrevelation: Tiny is not just a \ndog but scientific genius\nperspective: third person \nlimited\nRepeated for each source + human\nDeepSeek\nGemini\nClaude\nKimi\nHuman\nGPT\nStories converted to structured JSON templates \nalong 10 narrative dimensions\nObservations... \n\"C stories write epilogues more often\" \n\"Bprotagonists don't tend to expand their social \nnetworks\" \n\"A makes use of gossip frequently\"\n\"H have more than one main character sometimes\" \n\"D describes emotions through the body often (e.g., \ntight throat\"\nDeepSeek\nComparative Analysis (LLM Judge)\nComparative Analysis\nGemini\nacross sources\nGPT\nClaude\nKimi\nHuman\nA often starts \ngossip/rumors\nDiscriminative Features\nQ1: To what extent do subplots serve central theme (1-5)? \nQ2: Is central conflict driven by things in protagonists control?\nQ3: Does the story have explicit references to other texts? \nQ4: How often does the narrator address the reader?\nFeature Discovery\nfrom observations\ndistill common"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 2,
+    "text": "story have explicit references to other texts? \nQ4: How often does the narrator address the reader?\nFeature Discovery\nfrom observations\ndistill common patterns\nacross discovery story pool\nC stories write \nepilogues more \noften\nFeature Assignment\nover the full story corpus\nStory:\nThe dog arrived on a Tuesday, which Alistair \nForsythe would later consider significant, \nthough he could never explain precisely why. \nTuesdays had always struck him as the most \nhonest day of the week—neither the false \npromise of Monday nor the desperate relief of \nFriday. Tuesdays simply were, and so, \napparently, was Tiny...\nLLM Annotation\nFeature Vector\n4\n2\n1\n5\nsubplots\naddress\nreader\ncentral\nconflict\nexplicit\nreferences\n~60k stories x N features\n XGBoost Classifier\n|Feature Importance|\nexplicit references\nClaude ✓\naddress reader\ncentral conflict\nsubplots\nFigure 1: Overview of the STORYSCOPE pipeline. Stories are converted into structured tem-\nplates, then compared across sources writing to the same"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 3,
+    "text": "ots\nFigure 1: Overview of the STORYSCOPE pipeline. Stories are converted into structured tem-\nplates, then compared across sources writing to the same prompt to induce discriminative\nnarrative features, and finally featurized across the full corpus for downstream detection\nand authorship experiments. Story inspired by \"Tiny and the Monster\" (Sturgeon, 1983).\nstructure, and for good reason: these cues are highly discriminatory. AI-generated text\nsystematically overuses em-dashes, words like “delve” and “tapestry,” and other surface-\nlevel patterns that even simple classifiers detect reliably (Sun et al., 2025; Shaib et al., 2026).\nThat said, AI style is increasingly fleeting: GPT 5.4 significantly reduced em-dash usage,3\nand fine-tuning to mimic human style drops AI detection rates on creative writing from\n97% to 3% (Chakrabarty et al., 2026). Discourse-level narrative features (e.g., plot structure,\ncharacter agency, information revelation), which we refer to simply as narrative"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 4,
+    "text": "al., 2026). Discourse-level narrative features (e.g., plot structure,\ncharacter agency, information revelation), which we refer to simply as narrative features\nthroughout, are far harder to “humanize,” as changing them requires significant structural\nrewrites rather than simple post-hoc edits (Namuduri et al., 2025).\nAs AI seeps into the writing industry, the question of what constitutes original work shifts\nfrom how a story is written to how it is conceived. Settled U.S. legal precedent requires\nthat protected works show a minimal degree of originality (U.S. Supreme Court, 1991);\nrecent guidance from the U.S. Copyright Office clarifies that eligibility depends on sufficient\nhuman creative control (U.S. Copyright Office, 2023). To measure this, we use statistical\nrarity in a feature space of narrative decisions as a proxy for originality, where less common\ncombinations reflect the broader notion of originality invoked by Torrance (1966) and\ncopyright law. We hypothesize that humans"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 5,
+    "text": "ity, where less common\ncombinations reflect the broader notion of originality invoked by Torrance (1966) and\ncopyright law. We hypothesize that humans and AI models make systematically distinct\nnarrative choices, and that these differences persist even when stylistic cues are removed.\nTo test this, we introduce STORYSCOPE, a pipeline that automatically induces interpretable\nnarrative features grounded in the NarraBench taxonomy (Hamilton et al., 2025), span-\nning 10 dimensions of narrative structure (character, plot, setting, temporal structure, etc.).\nApplied to a parallel corpus of 10,272 prompts each written by a human author and five\nLLMs, STORYSCOPE yields 304 features and 61,608 featurized stories on which we train clas-\nsifiers. Our stories average roughly 5,000 words depending on source, enabling extraction\nof fine-grained narrative features that shorter texts cannot support.\nThe narrative features alone, withholding all stylistic features (e.g., sentence-level"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 2,
+    "chunk_id": 6,
+    "text": "e-grained narrative features that shorter texts cannot support.\nThe narrative features alone, withholding all stylistic features (e.g., sentence-level rhythm,\nfigurative language density), achieve a macro-F1 of 93.2% for the binary human vs. AI\ndetection task, retaining 97% of the performance of a model with both narrative and stylis-\ntic features. In the 6-way authorship attribution task (identifying which source wrote a\n3https://x.com/sama/status/1989193813043069219?s=20\n2"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 3,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nstory), narrative features get a macro-F1 of 68.4% without style, compared to 77.3% with\nstyle. When we represent each story as a vector of narrative features, the five AI models\noccupy a tight cluster that is well-separated from human stories, showing that AI models\nhave converged on a shared narrative space that is systematically separated from human\nstorytelling, and that these changes remain after editing stories for style (macro-F1 93.9%).\nHuman stories are, on average, rarer in narrative feature space (mean rarity percentile 0.71\nvs. 0.49 for AI). Each model also exhibits a unique narrative “fingerprint”: a set of features\non which it diverges from the other AI sources and enables fine-grained attribution.\nOur results suggest that the narrative choices underlying AI-generated fiction are distin-\nguishable from those of human authors, even when surface style is removed. Because these\nfeatures reflect structural decisions rather than"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 3,
+    "chunk_id": 1,
+    "text": "are distin-\nguishable from those of human authors, even when surface style is removed. Because these\nfeatures reflect structural decisions rather than lexical ones, they may prove more durable\nas models continue to evolve. We release the STORYSCOPE code, 10,272 writing prompts,\n51,336 AI-generated narratives, and narrative features for each story, generated at the cost\nof $4.4k USD, to support future work on AI authorship and narrative analysis.4\n2\nThe STORYSCOPE pipeline\nIn this section, we first describe the creation of a dataset that enables comparative analysis\nof narrative choices, before detailing our pipeline’s operation and post-hoc interpretation.\nData\nOur dataset consists of human-written short stories paired with multiple AI-\ngenerated mirrors with similar plots and characters. We extract 10,272 human-written\nstories from Books3 (Presser, 2020).5 To generate mirrored AI stories, we reverse-engineer\nwriting prompts from each human story by prompting Gemini 2.5 Flash (Gemini"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 3,
+    "chunk_id": 2,
+    "text": "ks3 (Presser, 2020).5 To generate mirrored AI stories, we reverse-engineer\nwriting prompts from each human story by prompting Gemini 2.5 Flash (Gemini Team,\n2025a) to infer the underlying premise (Li et al., 2024).6 We generate stories from 5 LLMs:\nGemini 3 Flash (Gemini Team, 2025b), Kimi K2.5 (Team, 2026), DeepSeek V3.2 (DeepSeek-AI,\n2025), Claude Sonnet 4.6 (Anthropic, 2026) and GPT 5.4 (OpenAI, 2026). Together with the\nhuman-authored story, this yields six sources, a term we use throughout to refer to each\norigin uniformly.7\n2.1\nSTORYSCOPE\nManually annotating the narrative decisions made within these 60K+ stories (averaging\n4,753 words) is infeasible at scale.8 Instead, we leverage LLMs to perform structured\nanalysis over our corpus of stories to create interpretable narrative features. The STORYSCOPE\npipeline consists of three stages: (1) structured intermediate representations, (2) cross-source\ncomparison, and (3) discourse-level feature discovery, guided by the narrative"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 3,
+    "chunk_id": 3,
+    "text": "e stages: (1) structured intermediate representations, (2) cross-source\ncomparison, and (3) discourse-level feature discovery, guided by the narrative taxonomy\nintroduced in NarraBench (Hamilton et al., 2025). Templates convert prose into structured\nnarrative fields, forcing downstream stages to reason over narrative content rather than\nstylistic surface. The comparative analysis stage distills 600 stories’ worth of structured\nrepresentations into cross-source observations (compressing ∼2.7M tokens of raw text into\n∼686K tokens) so that feature discovery can generalize from already-identified patterns\nrather than simultaneously reading, comparing, and formalizing.\nTheoretical grounding.\nWe transform each story into a template-based representation\nthat preserves narrative elements while abstracting away surface wording, grounding\nthis representation in NarraBench (Hamilton et al., 2025), which defines a taxonomy of\n4We do not release human-written stories due to copyright concerns.\n5We"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 3,
+    "chunk_id": 4,
+    "text": "resentation in NarraBench (Hamilton et al., 2025), which defines a taxonomy of\n4We do not release human-written stories due to copyright concerns.\n5We use Books3 strictly for academic purposes to understand the narrative differences in recent\nhuman-written and AI-generated text and inform discussions on AI-detection, authorship, and\ncopyright policy. Dataset statistics found in Table 4.\n6Full prompt-extraction template in Figure 6. Gemini 2.5 used during writing prompt construction\nin June 2025. We identify and extract stories from short story anthologies identified via running\nGemini 2.5 Flash over titles and blurbs in Books3.\n7All source identities are anonymized in LLM-facing prompts (see §B.)\n8Across the 61,608-story corpus, mean length is 4,753 words. Models refused to generate 24 stories.\n3"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 4,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n#\nFeature\nQuestion\nDim.\nType\nResponse Options\nAI\n1\nThematic Explicitness\nand Moralizing\nHow explicitly does the story ar-\nticulate its themes or morals?\nSIT\nscale\n1–5\n2\nAgency in Resolution\n→protagonist choice\nIs resolution driven by protago-\nnist’s choices or external events?\nPLT\ncat\nprotagonist_choice, mixed, ex-\nternal_fate\n3\nNarratorial\nThematic\nCommentary →yes\nDoes the narrator explicitly com-\nment on themes beyond charac-\nters’ perspectives?\nSIT\nbinary\nno, yes\nHuman\n1\nIntertextual\nStrategy\nTypes\n→\nexplicit\nnamed reference\nWhat kinds of intertextual en-\ngagement does the story em-\nploy?\nSIT\nmulti\nexplicit named, retelling, pas-\ntiche, myth/religion, self ref-\nerential\n2\nDepth of Recontextual-\nization After Surprise\nHow extensively does a revela-\ntion force reinterpretation of ear-\nlier scenes?\nREV\nscale\n1\n(none)–5\n(complete\nre-\nreading)\n3\nDegree of Chronologi-\ncal Discontinuity\nHow often does the narrative\njump across"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 4,
+    "chunk_id": 1,
+    "text": "on of ear-\nlier scenes?\nREV\nscale\n1\n(none)–5\n(complete\nre-\nreading)\n3\nDegree of Chronologi-\ncal Discontinuity\nHow often does the narrative\njump across time?\nTMP\nscale\n1–5\nTable 1: Examples of core features, see AI core features in Table 14, human in Table 15, and\nall 30 with human/AI means in Table 16. NarraBench dimensions include situatedness\n(SIT), plot (PLT), revelation (REV) and temporal structure (TMP).\nnarrative dimensions rooted in literary theory. We adopt ten of its twelve aspects: Agent,\nSocial Network, Event, Plot, Structure, Setting, Time, Revelation, Perspective, and Style.9 Each\ndimension consolidates an established line of narratological work (see Table 5 of Hamilton\net al., 2025). STORYSCOPE searches within those dimensions for the specific decisions that\nseparate sources. For example, its temporal dimension reflects long-standing narratological\ndistinctions around narrative order, duration, and frequency from Genette (1980), while\nplot arc is heavily inspired by Tian"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 4,
+    "chunk_id": 2,
+    "text": "g-standing narratological\ndistinctions around narrative order, duration, and frequency from Genette (1980), while\nplot arc is heavily inspired by Tian et al. (2024).\nStructured narrative representations.\nFor each story, we prompt GPT-5.1 (OpenAI, 2025)\nto extract a structured template organized along these ten dimensions. The extraction uses\na zero-shot prompt with a detailed JSON schema specifying the expected fields for each\ndimension (e.g., character names, roles, and motivations for Agent; causal chains and key\nevents for Event).10 The templates serve as a controlled intermediate representation (Pham\net al., 2024; Wang et al., 2023): by converting prose into structured fields, the subsequent\ncomparison stage reasons over narrative content rather than stylistic surface (see §B for\ndetails).\nComparative story analysis across sources.\nTo identify systematic narrative differences,\nwe perform pairwise comparisons across sources writing from the same prompt. We\nconstruct a discovery"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 4,
+    "chunk_id": 3,
+    "text": "s.\nTo identify systematic narrative differences,\nwe perform pairwise comparisons across sources writing from the same prompt. We\nconstruct a discovery pool of 600 stories (and their corresponding structured representations)\nover 100 parallel randomly selected writing prompts. The discovery pool is held out from\nthe main corpus and kept small because this stage uses GPT-5.1 with high reasoning effort\nover long inputs; 600 stories balance narrative diversity against cost. For each prompt, we\npresent all six templates to GPT-5.1 and ask it to produce a structured comparative analysis:\na structured JSON containing per-source dimension notes (e.g., how each source handles\ncharacter motivation), cross-source comparisons highlighting where sources diverge, and\nan executive summary of recurring patterns.11 The comparative analyses serve as the raw\nmaterial from which we derive our feature taxonomy.\nFeature discovery.\nWe extract interpretable narrative features from the comparative anal-\nyses"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 4,
+    "chunk_id": 4,
+    "text": "raw\nmaterial from which we derive our feature taxonomy.\nFeature discovery.\nWe extract interpretable narrative features from the comparative anal-\nyses by prompting GPT-5.1 to propose discriminative features within each NarraBench\ndimension.12 Each expert prompt is grounded in a specific NarraBench aspect and instructs\nthe model to propose features as closed-form questions with discrete answer choices. We\n9We exclude Paratext and Motivation, which depends on external context unavailable in our setting.\n10Templating prompt depicted in Figure 8.\n11We batch multiple prompts per analysis (mean 3.1), details in §B.\n12We use 10 specialized expert prompts, one per NarraBench dimension (see §C).\n4"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 5,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nconstrain features to five response types (categorical, ordinal, scale, binary, and multi-select)\nto support interpretable downstream modeling. To improve coverage, we run the discovery\nprocess three times and take the union of all proposed features, yielding 408 candidates. We\nthen deduplicate via embedding-based clustering, retaining the feature nearest each cluster\ncentroid, resulting in d = 304 features after merging 65 clusters.13 Each feature is defined as\na specific axis of narrative variation (e.g., the degree to which character motivation is stated\nexplicitly versus left implicit, or the extent to which a story’s timeline departs from chrono-\nlogical order). The final taxonomy spans five response types: categorical (124), ordinal (59),\nscale (45), binary (44), and multi-select (32).\n2.2\nSTORYSCOPE Interpretability\nFeature assignment.\nWe apply the features to the full dataset of 61,608 stories across all\n10,272 prompts. For each"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 5,
+    "chunk_id": 1,
+    "text": ").\n2.2\nSTORYSCOPE Interpretability\nFeature assignment.\nWe apply the features to the full dataset of 61,608 stories across all\n10,272 prompts. For each story, we present the full text along with the relevant feature\ndefinitions to Gemini 3 Flash (with minimal thinking) and obtain a value for each of the\n304 features,14 yielding a raw narrative-assignment vector z = (z1, . . . , zd) with d = 304\nsemantic features for every story in the corpus. The classifier does not consume z directly:\nafter encoding each feature according to its type (one-hot for categorical, multi-hot for\nmulti-select, numeric for ordinal and scale, binary as-is), we obtain an encoded input vector\nx ∈RD, where D depends on the feature subset and the expansion induced by categorical\nand multi-select features.\nDefining core and fingerprint features.\nNot all features contribute equally to distinguish-\ning sources. To identify which features are robust human-AI markers versus source-specific\ncues, we train XGBoost"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 5,
+    "chunk_id": 2,
+    "text": "s contribute equally to distinguish-\ning sources. To identify which features are robust human-AI markers versus source-specific\ncues, we train XGBoost classifiers (Chen & Guestrin, 2016). Gradient-boosted trees pair\nnaturally with SHAP (Lundberg & Lee, 2017) to yield exact, per-feature importance de-\ncompositions, letting us trace every prediction back to specific narrative decisions. We\nassess importance and stability through bootstrap SHAP analysis (B=50 iterations with\nprompt-level resampling) and assign each feature one of three roles:15 (1) Core Features:\nstable and important in the binary human-vs-AI task, with a strong, consistent separation\nthat holds across all five AI models (examples in Table 1). Each is signed as human-leaning\nor AI-leaning based on the direction of the gap; (2) Fingerprint features: identified from the\n6-way multiclass task. A feature qualifies when its SHAP importance is concentrated in a\nsingle source class, and that source’s observed values visibly"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 5,
+    "chunk_id": 3,
+    "text": "-way multiclass task. A feature qualifies when its SHAP importance is concentrated in a\nsingle source class, and that source’s observed values visibly differ from others; (3) Features\nsatisfying neither set of criteria are excluded from role-based analyses.\n3\nExperiments\nClassification.\nWe train XGBoost classifiers on encoded feature vectors x over 52,707\nstories (8,788 prompts) for two tasks: (1) binary detection (human vs. AI) and (2) 6-way\nauthorship attribution (human, Claude, GPT, DeepSeek, Gemini, Kimi), evaluated on a\nheld-out test set of 1,384 prompts (8,301 stories) with macro-F1 and AUPRC as the primary\nbinary metrics.16 Nominal features are one-hot encoded, multi-select features are multi-hot\nencoded, and ordinal / scale features retain numeric encoding. For the full Narrative+Style\nthis yields D = 1108 encoded columns; the Narrative variant uses D = 958, and Style Only\nuses D = 129. All evaluations use prompt-level grouping to prevent train/test leakage.\nFeature"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 5,
+    "chunk_id": 4,
+    "text": "mns; the Narrative variant uses D = 958, and Style Only\nuses D = 129. All evaluations use prompt-level grouping to prevent train/test leakage.\nFeature variants.\nA central question of this work is whether narrative choices carry dis-\ncriminative signal independent of surface style. To test this, we evaluate the following:\n13Each feature is encoded with F2LLM-4B (Zhang et al., 2025b) and clustered at cosine similarity\nthreshold 0.85, details in §B.\n14Gemini-3 has high repeatability over 5 independent runs (Krippendorff’s α = 0.90), human-\nvalidation on a 240 feature subset has a mean human–model Cohen’s κ = 0.84 (details in §C).\n15This procedure yields 30 core features and 75 fingerprint features. Full selection criteria, equations,\nand numerical thresholds are detailed in §D.\n16Hyperparameters are selected via grid search on the validation split, Binary: nest=420, depth=8,\nλ=2.0, and 5:1 positive class weight; 6-way: nest=500, depth=7, λ=1.0, evaluation details in §D.\n5"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 6,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nNarrative (257 features) includes all narrative features across nine NarraBench dimensions,\nexcluding all 39 features in the style dimension plus 8 features from other dimensions\nflagged as style-related, 47 in total.17 This is our primary model; it tests whether narrative\nstructure alone suffices for the detection and attribution tasks. Style Only (39 features)\nuses only the style features. Narrative + Style (304 features) uses all features across all\n10 NarraBench dimensions. Core Only (30 features) uses the subset of narrative features\nidentified as universally important and stable (§D). Core + Fingerprint (101 features) adds\nsource-specific fingerprint features to the core set.\nBaselines.\nWe compare against four text-based baselines that operate on raw story text\nrather than extracted features: (1) ModernBERT (Warner et al., 2025), a transformer fine-\ntuned on our training set (max length 512, 3 epochs); (2) Stylometric+XGB, XGBoost on"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 6,
+    "chunk_id": 1,
+    "text": "tures: (1) ModernBERT (Warner et al., 2025), a transformer fine-\ntuned on our training set (max length 512, 3 epochs); (2) Stylometric+XGB, XGBoost on 144\nhand-crafted stylometric features (character n-grams, POS distributions, readability scores);\n(3) TF-IDF+XGB, XGBoost on 5,000 TF-IDF features; and (4) Binoculars (Hans et al., 2024), a\nzero-shot AI-text detector. These baselines establish an upper bound on raw-text detection;\nwe are interested in understanding how closely our Narrative model performs.\n4\nDetecting AI from narrative features\nWe evaluate whether narrative features can separate human-written from AI-generated\nfiction. Narrative features alone achieve a macro-F1 of 93.2%, just 2.8 points below the model\nwith both style and narrative features in macro-F1 (95% prompt-bootstrap CI 2.09–3.54). A\nset of 30 core features retains about 91% of the narrative model’s macro-F1 (84.8%). We ask if\nSTORYSCOPE can still detect AI narratives after stylistics alterations, finding it"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 6,
+    "chunk_id": 2,
+    "text": "ains about 91% of the narrative model’s macro-F1 (84.8%). We ask if\nSTORYSCOPE can still detect AI narratives after stylistics alterations, finding it robust to edits.\nMethod\nSize\nF1\nAP\nNarrative features (ours)\nNarrative\n257\n93.2\n.959\nCore Only\n30\n84.8\n.828\nCore+FP\n101\n91.1\n.934\nStyle ablations\nNarr. + Style\n304\n96.0\n.982\nStyle Only\n39\n85.8\n.867\nText-based baselines\nModernBERT\n—\n99.9\n1.00\nStylometric+XGB\n144\n99.8\n.999\nTF-IDF+XGB\n5,000\n99.7\n.999\nBinoculars\n—\n55.9\n.404\nEdited Stories\nLAMP\n—\n93.9\n.988\nTable 2: Binary human vs. AI classification\nresults. F1 = macro-F1 (%); AP = AUPRC.\nStyle signals are stronger but narrative\nfeatures close the gap.\nModels built us-\ning only the style features achieve compa-\nrable performance to the core-only model\n(85.8% and 84.8% macro-F1 respectively), con-\nfirming that style remains a strong detec-\ntion cue, especially in long-context settings.\nMost automatic AI detection models have\nhigher performance on longer text (Bao et al.,\n2024; Xu et al.,"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 6,
+    "chunk_id": 3,
+    "text": "tion cue, especially in long-context settings.\nMost automatic AI detection models have\nhigher performance on longer text (Bao et al.,\n2024; Xu et al., 2025b). The narrative model\nis unchanged with length:\non a human-\nlength-matched test subset, it scores 93.2%\nmacro-F1 both before and after matching\n(see §G). While the strongest supervised text-\nbased baselines achieve near-perfect separa-\ntion (≥99.7% macro-F1, with ModernBERT at\n99.9%), zero-shot Binoculars is much weaker\n(55.9% macro-F1). Our narrative+style model\nnearly matches the strongest baselines (96.0%\nmacro-F1), with the added benefit of full in-\nterpretability.18 Narrative features alone recover 97% of the combined model’s macro-F1.\nCore features retain most of performance.\nBased on just 30 core features, our core model\nretains substantial human vs. AI separation, reaching 84.8% macro-F1 and 0.828 AUPRC.\nRepresentative core-feature definitions were introduced earlier in Table 1; see §I for the\ncomplete lists. Adding"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 6,
+    "chunk_id": 4,
+    "text": "hing 84.8% macro-F1 and 0.828 AUPRC.\nRepresentative core-feature definitions were introduced earlier in Table 1; see §I for the\ncomplete lists. Adding fingerprint features raises performance to 91.1% macro-F1 and 0.934\nAUPRC, recovering much of the gap to the full narrative model while using less than half of\nthe features. Our results suggest that the human-AI boundary lives in a compact subset of\nnarrative decisions, while fingerprint features contribute model-specific separability.\n17We flagged features using an LLM audit of a feature’s reliance on stylistic cues, details in §B.\n18We also ask if model style is affected by memorization of famous stories, finding that after filtering\nout likely memorized stories performance remains the same (see §F).\n6"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 7,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n6\n4\n2\n0\n2\n4\nLD1\n6\n4\n2\n0\n2\n4\nLD2\nClaude\nDeepSeek\nGemini\nGPT\nKimi\nHuman\nFigure 2: Projection of narrative feature vectors onto the first two linear discriminant\ncomponents. Human writing occupies a distinct region; the five AI models cluster together.\nClaude is the most distinct of the 5 AI models, Gemini and DeepSeek the nearest neighbors.\n4.1\nWhat core narrative choices separate human from AI writing?\nAI over-explains its themes.\nAI stories are more explicit and moralizing, (roughly 20%\nhigher on 1-5 scale), with tighter thematic unity and more central moral questions. Narrators\nexplicitly explain the story’s theme 77% of the time, versus 52% for humans: a grieving\ncharacter’s arc will typically end with the narrator stating the lesson learned. AI dialogue\nserves philosophical debate more often (59% vs. 34%), and references to other works tend to\nbe vague allusions (72% vs. 50%) rather than specific, named references. The pattern is one\nof"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 7,
+    "chunk_id": 1,
+    "text": "en (59% vs. 34%), and references to other works tend to\nbe vague allusions (72% vs. 50%) rather than specific, named references. The pattern is one\nof over-determination: AI spells out meaning rather than trusting the reader to infer it.\nHuman authors subvert linearity.\nAI stories exhibit tighter causal chains, more\nprotagonist-driven resolutions (69% vs. 46%), and far fewer subplots (79% “no subplots” vs.\n57%). AI resolutions favor internal understanding or acceptance (47% vs. 27%), whereas\nhumans are more comfortable with ambiguous endings. Humans use more time jumps,\nflashbacks and flash-forwards, and nonlinear structure to delay key revelations. AI fa-\nvors single-track narratives with fewer loose ends; human stories are messier, with time\njumps and disjointed causal chains—a human mystery might open at the funeral and spiral\nbackward through decades, while AI tells the same story from first clue to the grand reveal.\nAI over-writes the body and senses.\nAI overwhelmingly conveys"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 7,
+    "chunk_id": 2,
+    "text": "ward through decades, while AI tells the same story from first clue to the grand reveal.\nAI over-writes the body and senses.\nAI overwhelmingly conveys emotion through phys-\nical sensations and bodily metaphors (81% vs. 38% human), deploys more smell-based\nimagery (82% vs. 57%), and uses setting as a reflection of characters’ inner states more\nheavily. AI pays closer attention to physical environment and characters’ inner mental\nstates, showing emotion through bodies and environments rather than naming feelings\ndirectly. Where a human author might write that a character “felt afraid,” AI renders fear as\na tightening chest, cold sweat, and dimming lamplight. Humans use explicit emotion labels\n29% of the time versus just 8% for AI.\nHuman authors engage the outside world.\nHumans reference specific texts and authors\nat nearly double the AI rate (47% vs. 24%) and balance explicit with implicit references\nmore evenly (37% “balanced mix” vs. 16%), whereas AI generally sticks to vague"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 7,
+    "chunk_id": 3,
+    "text": "the AI rate (47% vs. 24%) and balance explicit with implicit references\nmore evenly (37% “balanced mix” vs. 16%), whereas AI generally sticks to vague allusions\nand avoids naming real brands, places, or works. Humans break the fourth wall far more\noften (67% vs. 39%) and address the reader directly more frequently (28% vs. 7%). Human\nwriting acknowledges its audience as a co-participant (e.g., an aside to “you, dear reader”);\nAI writes as though no one is watching.\nAI writing has less diverse narrative features.\nHuman stories draw from a broader narra-\ntive repertoire: they span more locations, carry more dialogue relative to narration, integrate\nmore subplots into overarching themes (42% vs. 21%), and present morally ambivalent\nprotagonists more often (59% vs. 38%), resisting the pull to a narrow set of defaults.\n7"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 8,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n4.2\nDo narrative features still work after stylistic changes?\nStyle is the most obvious surface-level cue distinguishing AI generations from human\nwriting, and style-based detectors are known to be brittle to paraphrasing and light edit-\ning (Saakyan et al., 2026). We ask whether narrative features are robust to such edits: if\nan AI-generated story is stylistically edited to remove surface artifacts, does our narrative\nclassifier still detect it?\nWe test this using Chakrabarty et al. (2025)’s span-level rewriting framework (LAMP),\nwhich identifies and rewrites seven categories of AI writing artifacts (e.g., cliché, redundant\nexposition, purple prose) using 25 few-shot examples from professional writers. We apply\nthis to 278 Gemini-generated stories, using Gemini itself as the rewriter, and evaluate our\nnarrative classifier on these edited stories.\nSurface editing barely affects narrative detection.\nAfter span-level artifact removal,"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 8,
+    "chunk_id": 1,
+    "text": "and evaluate our\nnarrative classifier on these edited stories.\nSurface editing barely affects narrative detection.\nAfter span-level artifact removal, the\nnarrative model detects edited Gemini stories at 93.9% macro-F1 (AUPRC 0.988), compared\nto 95.5% macro-F1 (AUPRC 0.996) on the original unedited stories, a drop of only 1.6\npoints. This near-zero effect indicates that narrative features are largely orthogonal to the\nsurface prose artifacts that LAMP targets: editing out clichéd phrasing or purple prose does\nnot alter the structural narrative choices (causal linearity, thematic explicitness, sensory\nover-description) that drive our classifier.\n5\nPinpointing each source’s writing style\nThe binary task asks whether a story is human or AI; we now ask if we can use narrative\nfeatures to detect exactly which source wrote a story. Using the same features and classifier,\nwe train a 6-way model over all six sources. Our narrative model reaches 68.4% macro-F1,\nindicating that narrative"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 8,
+    "chunk_id": 2,
+    "text": "g the same features and classifier,\nwe train a 6-way model over all six sources. Our narrative model reaches 68.4% macro-F1,\nindicating that narrative structure alone still carries weighty authorship signal, though the\nAI-authorship boundaries overlap much more than the binary human-AI boundary.\nMethod\nSize\nF1\nAcc.\nNarrative features (ours)\nNarrative\n257\n68.4\n68.4%\nCore Only\n30\n46.5\n46.8%\nCore+FP\n101\n63.4\n63.6%\nStyle ablations\nNarr. + Style\n304\n77.3\n77.3%\nStyle Only\n39\n60.4\n60.5%\nText-based baselines\nModernBERT\n—\n99.8\n99.8%\nStylometric+XGB\n144\n99.6\n99.6%\nTF-IDF+XGB\n5,000\n99.5\n99.5%\nTable 3: 6-way authorship attribution on the\ntest set. F1 = macro-F1 (%). As AI models\nconverge, the attribution task proves much\nmore difficult than the binary detection task.\nNarrative features retain substantial attri-\nbution signal.\nTable 3 shows macro-F1 and\naccuracy results for 6-way attribution. Our\nnarrative model achieves 68.4% macro-F1,\nwell above the 16.7% chance baseline but\nbelow the"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 8,
+    "chunk_id": 3,
+    "text": "s macro-F1 and\naccuracy results for 6-way attribution. Our\nnarrative model achieves 68.4% macro-F1,\nwell above the 16.7% chance baseline but\nbelow the narrative+style model at 77.3%.\nNarrative exceeds Style Only by 8.0 macro-\nF1 points (95% prompt-bootstrap CI 6.7–9.2),\nwhile Core+Fingerprint exceeds Core Only by\n16.8 points (15.7–17.9), consistent with style\nand fingerprint features adding complemen-\ntary attribution signal. Text-based baselines\nremain far stronger on raw text, all reporting\nmacro-F1s of at least 99.5%.\nClaude and GPT most distinctive of AI mod-\nels.\nTable 12 breaks down per-class F1 for\nthe 6-way task. Human is the most distinctive\nsource (93.0% F1 with style, 88.5% without),\nfollowed by Claude (89.3% / 77.1%) and GPT (82.1% / 73.0%). DeepSeek, Gemini, and\nKimi form a more confused cluster (65.8–66.8% F1 with style). The gap widens in the\nnarrative-only model: human and Claude retain strong separability while the bottom three\nmodels fall to 55.2–59.6%, suggesting"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 8,
+    "chunk_id": 4,
+    "text": ". The gap widens in the\nnarrative-only model: human and Claude retain strong separability while the bottom three\nmodels fall to 55.2–59.6%, suggesting that narrative structure alone is less diagnostic for\ndistinguishing among models that make similar storytelling choices.\nAI convergence separates from human narratives.\nThe five AI sources occupy overlap-\nping regions of narrative feature space, separate from human authors (Figure 2). The six\nmost-confused source pairs in our narrative-only 6-way classifier are exclusively AI↔AI\n8"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 9,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n(Figure 3); the largest pair (gemini↔deepseek, 222 and 207 stories) dwarfs the most common\nhuman misclassification (human→kimi, 46). Working in the z-scored encoded feature space\nwith Euclidean distance, mean human-AI centroid distance is 1.6× the mean AI-AI centroid\ndistance (6.6 vs. 4.3). Even the closest human-AI centroid pair is farther apart than the most\ndistant AI-AI pair (6.2 vs. 6.0), indicating that human stories occupy a distinct region rather\nthan merely a broader version of the AI cluster. Human stories are also more dispersed:\ntheir mean distance to the human centroid is 22% greater than the average AI radius (33.2\nvs. 27.4) and their median 10-nearest-neighbor radius is 1.13× larger (33.1 vs. 29.2).\nHuman narratives are rarer.\nWe measure per-story rarity as the mean Euclidean distance\nto a story’s 25 nearest neighbors. Human stories have a higher mean rarity percentile than\nAI stories (0.71 vs. 0.49; Cohen’s d = 0.83"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 9,
+    "chunk_id": 1,
+    "text": "lidean distance\nto a story’s 25 nearest neighbors. Human stories have a higher mean rarity percentile than\nAI stories (0.71 vs. 0.49; Cohen’s d = 0.83 indicating a substantial difference), and humans\nare overrepresented in the rarest tail: 24.7% of all human stories fall in the top 10% rarest\nstories corpus-wide, compared to just 7.1% of AI stories (top 1%: 3.0% human vs. 0.6% AI).\nAt the prompt level, the human story is ranked the rarest of all six story versions 57.8% of\nthe time (vs. 16.7% by chance) (per-source distributions in §H).\nClaude keeps it cool.\nClaude has the most distinctive narrative profile of the five LLMs.\nIts stories are defined by its restraint: event intensity escalates less than in any other source,\nand narrative voice is the most uniform. Claude takes a reverent/continuist approach to\nliterary tradition, honoring and extending storytelling conventions rather than subverting\nor challenging them (62% of Claude stories vs. 39–56% across other sources). It"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 9,
+    "chunk_id": 2,
+    "text": "honoring and extending storytelling conventions rather than subverting\nor challenging them (62% of Claude stories vs. 39–56% across other sources). It favors\nepilogues and avoids dream sequences, producing careful, consistent stories that favor quiet\nendings over ’avalanche’ endings.\nGPT likes to gossip.\nGPT centers on socially-oriented storytelling: gossip and rumor\nas a plot mechanism (64% vs. 44–55% for other sources), a tendency to frame stories as\nreflections on events from years or decades ago, and ensemble-heavy social networks\nmatching human levels. GPT subverts expectations more than other AI (41% vs. 27–36%)\nand leaves reconciliations ambiguous.\nHuman\nClaude\nGPT\nGemini\nDeepSeek\nKimi\nPredicted\nHuman\nClaude\nGPT\nGemini\nDeepSeek\nKimi\nActual\n88.5\n2.8\n2.5\n1.2\n1.7\n3.3\n2.7\n78.1\n6.3\n2.6\n6.0\n4.3\n2.3\n6.8\n72.2\n4.3\n6.9\n7.5\n1.9\n3.3\n3.9\n59.5 16.1 15.3\n2.1\n7.0\n4.6\n15.0 57.4 13.8\n2.5\n4.5\n8.3\n17.0 12.8 55.0\n0\n2\n4\n6\n8\n10\n12\n14\n16\nRow %\nFigure 3: Confusion matrix for authorship at-\ntribution"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 9,
+    "chunk_id": 3,
+    "text": ".5 16.1 15.3\n2.1\n7.0\n4.6\n15.0 57.4 13.8\n2.5\n4.5\n8.3\n17.0 12.8 55.0\n0\n2\n4\n6\n8\n10\n12\n14\n16\nRow %\nFigure 3: Confusion matrix for authorship at-\ntribution (narrative model) as a percentage\n(%). Misclassifications concentrate among AI\nmodels, particularly DeepSeek–Gemini–Kimi.\nGemini, DeepSeek, and Kimi are ‘triplets’.\nDespite forming a more confused cluster,\neach still has individual quirks. DeepSeek\nfront-loads\ncrucial\ncontext\nthat\nother\nsources leave until later. Gemini produces\nthe tidiest endings, extended denouements,\nand the bleakest settings (88% tagged bleak\nand oppressive). Kimi has the fewest finger-\nprints and lowest F1, sitting at the generic\ncenter of the AI distribution with no distinc-\ntive narrative choices.\n6\nRelated Work\nAI slop and detection.\nLLM text ex-\nhibits systematic lexical and syntactic pat-\nterns (Shaib et al., 2026; Kobak et al., 2025;\nShaib et al., 2025), and parallel-corpus stud-\nies show LLMs converge on a narrow gram-\nmatical and rhetorical style distinct"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 9,
+    "chunk_id": 4,
+    "text": "026; Kobak et al., 2025;\nShaib et al., 2025), and parallel-corpus stud-\nies show LLMs converge on a narrow gram-\nmatical and rhetorical style distinct from human variation (Reinhart et al., 2025). Detection\nmethods range from stylometric and linguistic features (Li et al., 2025; O’Sullivan, 2025;\nTripto et al., 2025) to ML classifiers on creative fiction (McGlinchey & Barclay, 2024; Najjar\net al., 2025; McGovern et al., 2025; Huang et al., 2024), with expert humans also achieving\nnear-perfect accuracy (Russell et al., 2025). Detecting partial AI edits to human text remains\nharder (Thai et al., 2026; Chen et al., 2025; He et al., 2025).\n9"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 10,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nOriginality and creativity.\nLLM outputs are less novel across n-gram (Padmakumar et al.,\n2026), psychometric (Chakrabarty et al., 2024; Koivisto & Grassini, 2023; Gómez-Rodríguez\n& Williams, 2024), and creativity-theoretic measures (Boden, 2004; Colton & Wiggins, 2012;\nFranceschelli & Musolesi, 2023). Narrative theory provides structural grounding for gen-\neration and understanding (Liu et al., 2026a): LLMs can extract discourse-level features\nsuch as POV, temporality, and focalization (Piper & Bagga, 2024), and prompt-based com-\nparisons reveal that human stories contain more cultural nuance, emotional ambiguity,\nand unexpected twists than GPT-generated counterparts (Beguš, 2024). Network analyses\nreveal simpler social structures in AI fiction (Nonaka & Perry, 2025). Fine-tuning on literary\ncorpora produces preferred text (Chakrabarty et al., 2026) but activates verbatim memo-\nrization (Liu et al., 2026b); constrained generation from human"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 10,
+    "chunk_id": 1,
+    "text": "orpora produces preferred text (Chakrabarty et al., 2026) but activates verbatim memo-\nrization (Liu et al., 2026b); constrained generation from human text fragments further blurs\nthe authorship boundary (Pham et al., 2025). Across benchmarks (Hou et al., 2026; Paech,\n2024; Zhang et al., 2025a; Saakyan et al., 2026; Wadhwa et al., 2026; Nguyen & Singla, 2025),\nLLMs consistently reduce collective diversity (Doshi & Hauser, 2024; Jiang et al., 2025), with\nrepeated plot elements across generations (Xu et al., 2025a).\n7\nConclusion\nWe introduce STORYSCOPE, a pipeline for extracting interpretable narrative features at scale,\nand show that these features alone achieve 93.2% macro-F1 for human vs. AI detection\nand 68.4% for six-way attribution across 61,608 stories, retaining performance over 97% of\nmodels that also include stylistic signals. A compact set of 30 core features captures much\nof this separation: AI stories are systematically more thematically explicit, causally tidy,"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 10,
+    "chunk_id": 2,
+    "text": "signals. A compact set of 30 core features captures much\nof this separation: AI stories are systematically more thematically explicit, causally tidy, and\ntemporally linear, while human stories show greater structural diversity and occupy a rarer,\nmore dispersed region of narrative space. As surface-level signatures become increasingly\ntransient, often removed by newer model versions or simple post-hoc edits, narrative\nfeatures offer a more durable basis for authorship analysis, since altering them requires\nsignificant structural rewrites. Our features provide a measurable proxy for narrative\nuniqueness that complements existing detection tools.\nAcknowledgments\nWe thank the University of Maryland Computational Linguistics and Information Processing\n(CLIP) Lab for their feedback and support. This project was partially supported by awards\nIIS-2046248 and IIS-2312949 from the National Science Foundation (NSF). We thank Google\nfor a Cloud Credit award and Pangram Labs for an OpenRouter"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 10,
+    "chunk_id": 3,
+    "text": "ds\nIIS-2046248 and IIS-2312949 from the National Science Foundation (NSF). We thank Google\nfor a Cloud Credit award and Pangram Labs for an OpenRouter credit award, both of which\nenabled this research.\nEthics Statement\nUse of Books3.\nWe acknowledge the copyright issues related to the Books3 dataset (Presser,\n2020) and do not endorse its use for model training or commercial text generation. The\nuse of this dataset in our paper is restricted to academic purposes only and is meant to\nunderstand the narrative differences in human-written and AI-generated text to help inform\ndiscussions on AI-detection, authorship, and copyright policy.\nAI Disclosure.\nLarge language models and coding agents (Claude Code and Codex) are\nused to aid with and polish writing and generate some tables and plots.\nReferences\nGeorge Alexandru Adam, Alexander Cui, Edwin Thomas, Emily Napier, Nazar Shmatko,\nJacob Schnell, Jacob Junqi Tian, Alekhya Dronavalli, Edward Tian, and Dongwon Lee.\nGptzero: Robust detection of"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 10,
+    "chunk_id": 4,
+    "text": "n Thomas, Emily Napier, Nazar Shmatko,\nJacob Schnell, Jacob Junqi Tian, Alekhya Dronavalli, Edward Tian, and Dongwon Lee.\nGptzero: Robust detection of llm-generated texts, 2026. URL https://arxiv.org/abs/\n2602.13042.\n10"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 11,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nAlibaba Cloud. Qwen3.5: Towards native multimodal agents. https://qwen.ai/blog?id=\nqwen3.5, 2026. Model release.\nAnthropic. Claude system card. Technical report, Anthropic, 2026. URL https://www-cdn.\nanthropic.com/bbd8ef16d70b7a1665f14f306ee88b53f686aa75.pdf.\nGuangsheng Bao, Yanbin Zhao, Zhiyang Teng, Linyi Yang, and Yue Zhang. Fast-detectGPT:\nEfficient zero-shot detection of machine-generated text via conditional probability cur-\nvature. In The Twelfth International Conference on Learning Representations, 2024. URL\nhttps://openreview.net/forum?id=Bpcgcr8E8Z.\nNina Beguš.\nExperimental narratives: A comparison of human crowdsourced story-\ntelling and AI storytelling.\nHumanities and Social Sciences Communications, 11:1392,\n2024.\ndoi:\n10.1057/s41599-024-03868-8.\nURL https://www.nature.com/articles/\ns41599-024-03868-8.\nMargaret A. Boden. The Creative Mind: Myths and Mechanisms. Routledge, 2 edition, 2004.\nBook Industry Study Group.\nBisac subject"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 11,
+    "chunk_id": 1,
+    "text": "/\ns41599-024-03868-8.\nMargaret A. Boden. The Creative Mind: Myths and Mechanisms. Routledge, 2 edition, 2004.\nBook Industry Study Group.\nBisac subject headings list.\nhttps://www.bisg.org/\ncomplete-bisac-subject-headings-list, 2024. Industry standard for categorizing books\nby subject; accessed 2026-03-31.\nTom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Pra-\nfulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell,\net al.\nLanguage models are few-shot learners.\nIn Advances in Neural Information\nProcessing Systems, volume 33, 2020. URL https://papers.nips.cc/paper/2020/hash/\n1457c0d6bfcb4967418bfb8ac142f64a-Abstract.html.\nTuhin Chakrabarty, Philippe Laban, Divyansh Agarwal, Smaranda Muresan, and Chien-\nSheng Wu. Art or artifice? large language models and the false promise of creativity.\nIn Proceedings of the 2024 CHI Conference on Human Factors in Computing Systems, pp.\n30:1–30:34. ACM, 2024. doi: 10.1145/3613904.3642731. URL"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 11,
+    "chunk_id": 2,
+    "text": "ativity.\nIn Proceedings of the 2024 CHI Conference on Human Factors in Computing Systems, pp.\n30:1–30:34. ACM, 2024. doi: 10.1145/3613904.3642731. URL https://dl.acm.org/doi/10.\n1145/3613904.3642731.\nTuhin Chakrabarty, Philippe Laban, and Chien-Sheng Wu. Can AI writing be salvaged?\nmitigating idiosyncrasies and improving human-AI alignment in the writing process\nthrough edits. In Proceedings of the 2025 CHI Conference on Human Factors in Computing\nSystems, pp. 1210:1–1210:33. ACM, 2025. doi: 10.1145/3706598.3713559. URL https:\n//dl.acm.org/doi/10.1145/3706598.3713559.\nTuhin Chakrabarty, Jane C. Ginsburg, and Paramveer Dhillon. Readers prefer outputs of\nai trained on copyrighted books over expert human writers, 2026. URL https://arxiv.\norg/abs/2510.13939.\nJiaqi Chen, Xiaoye Zhu, Tianyang Liu, Ying Chen, Xinhui Chen, Yiwen Yuan, Chak Tou\nLeong, Zuchao Li, Tang Long, Lei Zhang, Chenyu Yan, Guanghao Mei, Jie Zhang, and\nLefei Zhang. Imitate before detect: Aligning machine stylistic"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 11,
+    "chunk_id": 3,
+    "text": "ak Tou\nLeong, Zuchao Li, Tang Long, Lei Zhang, Chenyu Yan, Guanghao Mei, Jie Zhang, and\nLefei Zhang. Imitate before detect: Aligning machine stylistic preference for machine-\nrevised text detection.\nIn Proceedings of the AAAI Conference on Artificial Intelligence,\nvolume 39, pp. 23559–23567, 2025. doi: 10.1609/aaai.v39i22.34525. URL https://doi.\norg/10.1609/aaai.v39i22.34525.\nTianqi Chen and Carlos Guestrin. Xgboost: A scalable tree boosting system. In Proceedings\nof the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining,\nKDD ’16, pp. 785–794, New York, NY, USA, 2016. Association for Computing Machinery.\nISBN 9781450342322. doi: 10.1145/2939672.2939785. URL https://doi.org/10.1145/\n2939672.2939785.\nSimon Colton and Geraint A. Wiggins. Computational creativity: The final frontier? In\nProceedings of the 20th European Conference on Artificial Intelligence (ECAI 2012), volume\n242 of Frontiers in Artificial Intelligence and Applications, pp. 21–26. IOS Press,"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 11,
+    "chunk_id": 4,
+    "text": "European Conference on Artificial Intelligence (ECAI 2012), volume\n242 of Frontiers in Artificial Intelligence and Applications, pp. 21–26. IOS Press, 2012. doi:\n10.3233/978-1-61499-098-7-21.\n11"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 12,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nDeepSeek-AI. Deepseek-v3.2: Pushing the frontier of open large language models, 2025.\nURL https://arxiv.org/abs/2512.02556.\nAniket R. Doshi and Oliver P. Hauser. Generative AI enhances individual creativity but\nreduces the collective diversity of novel content. Science Advances, 10(5):eadk1234, 2024.\ndoi: 10.1126/sciadv.adk1234.\nBradley Emi and Max Spero. Technical report on the pangram ai-generated text classifier,\n2024. URL https://arxiv.org/abs/2402.14873.\nGiorgio Franceschelli and Mirco Musolesi. On the creativity of large language models. arXiv\npreprint arXiv:2304.00008, 2023. URL https://arxiv.org/abs/2304.00008.\nGemini Team. Gemini: A family of highly capable multimodal models, 2023. URL https:\n//arxiv.org/abs/2312.11805.\nGemini Team. Gemini 2.5: Pushing the frontier with advanced reasoning, multimodality,\nlong context, and next generation agentic capabilities, 2025a. URL https://arxiv.org/\nabs/2507.06261.\nGemini Team.\nGemini 3 flash"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 12,
+    "chunk_id": 1,
+    "text": "ning, multimodality,\nlong context, and next generation agentic capabilities, 2025a. URL https://arxiv.org/\nabs/2507.06261.\nGemini Team.\nGemini 3 flash model card.\nTechnical report,\nGoogle Deep-\nMind, 2025b.\nURL https://storage.googleapis.com/deepmind-media/Model-Cards/\nGemini-3-Flash-Model-Card.pdf.\nGérard Genette. Narrative Discourse: An Essay in Method. Cornell University Press, Ithaca,\nNY, 1980.\nCarlos Gómez-Rodríguez and Paul Andrew Williams.\nThe unlikely duel: Evaluating\ncreative writing in LLMs through a unique scenario. In Proceedings of the XX Conference\nof the Spanish Association for Artificial Intelligence (CAEPIA 2024), pp. 225–226, 2024. URL\nhttps://www.grupolys.org/biblioteca/GomWil2024a.pdf.\nSil Hamilton, Matthew Wilkens, and Andrew Piper. Narrabench: A comprehensive frame-\nwork for narrative benchmarking, 2025. URL https://arxiv.org/abs/2510.09869.\nAbhimanyu Hans, Avi Schwarzschild, Valeriia Cherepanova, Hamid Kazemi, Anirud-\ndha Saha, Micah Goldblum, Jonas Geiping, and"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 12,
+    "chunk_id": 2,
+    "text": "/arxiv.org/abs/2510.09869.\nAbhimanyu Hans, Avi Schwarzschild, Valeriia Cherepanova, Hamid Kazemi, Anirud-\ndha Saha, Micah Goldblum, Jonas Geiping, and Tom Goldstein.\nSpotting LLMs\nwith binoculars: Zero-shot detection of machine-generated text, 2024.\nURL https:\n//openreview.net/forum?id=iARAKITHTH.\nYongxin He, Shan Zhang, Yixuan Cao, Lei Ma, and Ping Luo. DETree: DEtecting human-AI\ncollaborative texts via tree-structured hierarchical representation learning. In Advances in\nNeural Information Processing Systems, 2025.\nZhaoyi Joey Hou, Bowei Alvin Zhang, Yining Lu, Bhiman Kumar Baghel, Anneliese Brei,\nXiming Lu, Meng Jiang, Faeze Brahman, Snigdha Chaturvedi, Haw-Shiuan Chang, Daniel\nKhashabi, and Xiang Lorraine Li. Creativityprism: A holistic evaluation framework for\nlarge language model creativity, 2026. URL https://arxiv.org/abs/2510.20091.\nBaixiang Huang, Canyu Chen, and Kai Shu. Authorship attribution in the era of LLMs:\nProblems, methodologies, and challenges. arXiv preprint"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 12,
+    "chunk_id": 3,
+    "text": "510.20091.\nBaixiang Huang, Canyu Chen, and Kai Shu. Authorship attribution in the era of LLMs:\nProblems, methodologies, and challenges. arXiv preprint arXiv:2408.08946, 2024. URL\nhttps://arxiv.org/abs/2408.08946.\nLiwei Jiang, Yuanjun Chai, Margaret Li, Mickel Liu, Raymond Fok, Nouha Dziri, Yu-\nlia Tsvetkov, Maarten Sap, and Yejin Choi. Artificial hivemind: The open-ended ho-\nmogeneity of language models (and beyond). In The Thirty-ninth Annual Conference\non Neural Information Processing Systems Datasets and Benchmarks Track, 2025.\nURL\nhttps://openreview.net/forum?id=saDOrrnNTz.\nDmitry Kobak, Rita González-Márquez, Em˝oke-Ágnes Horvát, and Jan Lause. Delving\ninto LLM-assisted writing in biomedical publications through excess vocabulary. Science\nAdvances, 11(27):eadt3813, 2025. doi: 10.1126/sciadv.adt3813. URL https://www.science.\norg/doi/10.1126/sciadv.adt3813.\n12"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 13,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nMika Koivisto and Simone Grassini. Best humans still outperform artificial intelligence\nin a creative divergent thinking task. Scientific Reports, 13:13601, 2023. doi: 10.1038/\ns41598-023-40858-3.\nSiyuan Li, Aodu Wulianghai, Xi Lin, Guangyan Li, Xiang Chen, Jun Wu, and Jianhua Li.\nStyledecipher: Robust and explainable detection of llm-generated texts with stylistic\nanalysis, 2025. URL https://arxiv.org/abs/2510.12608.\nXian Li, Ping Yu, Chunting Zhou, Timo Schick, Omer Levy, Luke Zettlemoyer, Jason E\nWeston, and Mike Lewis. Self-alignment with instruction backtranslation. In The Twelfth\nInternational Conference on Learning Representations, 2024. URL https://openreview.net/\nforum?id=1oijHJBRsT.\nDavid Y. Liu, Aditya Joshi, and Paul Dawson. Narrative theory-driven LLM methods for\nautomatic story generation and understanding: A survey, 2026a. URL https://arxiv.\norg/abs/2602.15851.\nXinyue Liu, Niloofar Mireshghallah, Jane C. Ginsburg, and Tuhin"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 13,
+    "chunk_id": 1,
+    "text": "generation and understanding: A survey, 2026a. URL https://arxiv.\norg/abs/2602.15851.\nXinyue Liu, Niloofar Mireshghallah, Jane C. Ginsburg, and Tuhin Chakrabarty. Align-\nment whack-a-mole : Finetuning activates verbatim recall of copyrighted books in large\nlanguage models, 2026b. URL https://arxiv.org/abs/2603.20957.\nScott M. Lundberg and Su-In Lee. A unified approach to interpreting model predictions.\nIn Proceedings of the 31st International Conference on Neural Information Processing Sys-\ntems, NIPS’17, pp. 4768–4777, Red Hook, NY, USA, 2017. Curran Associates Inc. ISBN\n9781510860964.\nScott M. Lundberg, Gabriel Erion, Hugh Chen, Alex DeGrave, Jordan M. Prutkin, Bala Nair,\nRonit Katz, Jeremy Himmelfarb, Nisha Bansal, and Su-In Lee. From local explanations to\nglobal understanding with explainable ai for trees. Nature Machine Intelligence, 2:56–67,\n2020. doi: 10.1038/s42256-019-0138-9.\nAndrea Cristina McGlinchey and Peter J. Barclay. Using machine learning to distinguish\nhuman-written"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 13,
+    "chunk_id": 2,
+    "text": "e, 2:56–67,\n2020. doi: 10.1038/s42256-019-0138-9.\nAndrea Cristina McGlinchey and Peter J. Barclay. Using machine learning to distinguish\nhuman-written from machine-generated creative fiction, 2024. URL https://arxiv.org/\nabs/2412.15253.\nHope McGovern, Rickard Stureborg, Yoshi Suhara, and Dimitris Alikaniotis. Your large\nlanguage models are leaving fingerprints. In Firoj Alam, Preslav Nakov, Nizar Habash,\nIryna Gurevych, Shammur Chowdhury, Artem Shelmanov, Yuxia Wang, Ekaterina Arte-\nmova, Mucahid Kutlu, and George Mikros (eds.), Proceedings of the 1stWorkshop on GenAI\nContent Detection (GenAIDetect), pp. 85–95, Abu Dhabi, UAE, January 2025. Interna-\ntional Conference on Computational Linguistics. URL https://aclanthology.org/2025.\ngenaidetect-1.6/.\nAyat A. Najjar, Huthaifa I. Ashqar, Omar A. Darwish, and Eman Hammad. Leveraging\nexplainable AI for LLM text attribution: Differentiating human-written and multiple\nLLM-generated text. Information, 16(9):767, 2025. doi:"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 13,
+    "chunk_id": 3,
+    "text": "Leveraging\nexplainable AI for LLM text attribution: Differentiating human-written and multiple\nLLM-generated text. Information, 16(9):767, 2025. doi: 10.3390/info16090767. URL\nhttps://www.mdpi.com/2078-2489/16/9/767.\nRamya Namuduri, Yating Wu, Anshun Asher Zheng, Manya Wadhwa, Greg Durrett, and\nJunyi Jessy Li. QUDsim: Quantifying discourse similarities in LLM-generated text. In\nSecond Conference on Language Modeling, 2025. URL https://openreview.net/forum?id=\nzFz1BJu211.\nManh Hung Nguyen and Adish Singla. Divergent-convergent thinking in large language\nmodels for creative problem generation, 2025. URL https://arxiv.org/abs/2512.23601.\nHiroshi Nonaka and K. E. Perry. Evaluating LLM story generation through large-scale\nnetwork analysis of social structures. In NeurIPS 2025 Workshop on Evaluating the Evolving\nLLM Lifecycle: Benchmarks, Emergent Abilities, and Scaling, 2025. URL https://openreview.\nnet/forum?id=Ae4UeGI021.\nOpenAI. Gpt-5.1 instant and gpt-5.1 thinking system card."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 13,
+    "chunk_id": 4,
+    "text": "rks, Emergent Abilities, and Scaling, 2025. URL https://openreview.\nnet/forum?id=Ae4UeGI021.\nOpenAI. Gpt-5.1 instant and gpt-5.1 thinking system card. https://cdn.openai.com/pdf/\n4173ec8d-1229-47db-96de-06d87147e07e/5_1_system_card.pdf, November 2025.\n13"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 14,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nOpenAI. Gpt-5.4 thinking system card. Technical report, OpenAI, 2026. URL https:\n//deploymentsafety.openai.com/gpt-5-4-thinking/gpt-5-4-thinking.pdf.\nJames O’Sullivan.\nStylometric comparisons of human versus AI-generated creative\nwriting. Humanities and Social Sciences Communications, 12:1708, 2025. doi: 10.1057/\ns41599-025-05986-3.\nVishakh Padmakumar, Chen Yueh-Han, Jane Pan, Valerie Chen, and He He. Measuring LLM\nnovelty as the frontier of original and high-quality output. In The Fourteenth International\nConference on Learning Representations, 2026. URL https://openreview.net/forum?id=\ni7QNKZioN6.\nSamuel J. Paech. Eq-bench: An emotional intelligence benchmark for large language models,\n2024. URL https://arxiv.org/abs/2312.06281.\nChau Minh Pham, Alexander Hoyle, Simeng Sun, Philip Resnik, and Mohit Iyyer. TopicGPT:\nA prompt-based topic modeling framework. In Kevin Duh, Helena Gomez, and Steven\nBethard (eds.), Proceedings of the 2024"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 14,
+    "chunk_id": 1,
+    "text": "ik, and Mohit Iyyer. TopicGPT:\nA prompt-based topic modeling framework. In Kevin Duh, Helena Gomez, and Steven\nBethard (eds.), Proceedings of the 2024 Conference of the North American Chapter of the\nAssociation for Computational Linguistics: Human Language Technologies (Volume 1: Long\nPapers), pp. 2956–2984, Mexico City, Mexico, June 2024. Association for Computational\nLinguistics. doi: 10.18653/v1/2024.naacl-long.164. URL https://aclanthology.org/\n2024.naacl-long.164/.\nChau Minh Pham, Jenna Russell, Dzung Pham, and Mohit Iyyer. Frankentext: Stitching\nrandom text fragments into long-form narratives, 2025. URL https://arxiv.org/abs/\n2505.18128.\nAndrew Piper and Sunyam Bagga. Using large language models for understanding nar-\nrative discourse. In Yash Kumar Lal, Elizabeth Clark, Mohit Iyyer, Snigdha Chaturvedi,\nAnneliese Brei, Faeze Brahman, and Khyathi Raghavi Chandu (eds.), Proceedings of the\n6th Workshop on Narrative Understanding, pp. 37–46, Miami, Florida, USA, November\n2024."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 14,
+    "chunk_id": 2,
+    "text": "Brahman, and Khyathi Raghavi Chandu (eds.), Proceedings of the\n6th Workshop on Narrative Understanding, pp. 37–46, Miami, Florida, USA, November\n2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.wnu-1.4. URL\nhttps://aclanthology.org/2024.wnu-1.4/.\nShawn\nPresser.\nBooks3,\n2020.\nURL\nhttps://twitter.com/theshawwn/status/\n1320282149329784833.\nAlex Reinhart, Ben Markey, Michael Laudenbach, Kachatad Pantusen, Ronald Yurko, Gor-\ndon Weinberg, and David West Brown. Do LLMs write like humans? variation in\ngrammatical and rhetorical styles. Proceedings of the National Academy of Sciences of the\nUnited States of America, 122(8):e2422455122, 2025. doi: 10.1073/pnas.2422455122. URL\nhttps://www.pnas.org/doi/10.1073/pnas.2422455122.\nJenna Russell, Marzena Karpinska, and Mohit Iyyer. People who frequently use ChatGPT\nfor writing tasks are accurate and robust detectors of AI-generated text. In Wanxiang\nChe, Joyce Nabende, Ekaterina Shutova, and Mohammad Taher Pilehvar (eds.),"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 14,
+    "chunk_id": 3,
+    "text": "g tasks are accurate and robust detectors of AI-generated text. In Wanxiang\nChe, Joyce Nabende, Ekaterina Shutova, and Mohammad Taher Pilehvar (eds.), Pro-\nceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume\n1: Long Papers), pp. 5342–5373, Vienna, Austria, July 2025. Association for Computa-\ntional Linguistics. ISBN 979-8-89176-251-0. doi: 10.18653/v1/2025.acl-long.267. URL\nhttps://aclanthology.org/2025.acl-long.267/.\nArkadiy Saakyan, Najoung Kim, Smaranda Muresan, and Tuhin Chakrabarty. Death of\nthe novel(ty): Beyond n-gram novelty as a metric for textual creativity. In The Fourteenth\nInternational Conference on Learning Representations, 2026. URL https://openreview.net/\nforum?id=z2idLjqzBe.\nChantal Shaib, Vinith Menon Suriyakumar, Byron C Wallace, and Marzyeh Ghassemi.\nLearning the wrong lessons: Syntactic-domain spurious correlations in language models.\nIn The Thirty-ninth Annual Conference on Neural Information Processing Systems, 2025."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 14,
+    "chunk_id": 4,
+    "text": "sons: Syntactic-domain spurious correlations in language models.\nIn The Thirty-ninth Annual Conference on Neural Information Processing Systems, 2025. URL\nhttps://openreview.net/forum?id=oBikm5Rshc.\nChantal Shaib, Tuhin Chakrabarty, Diego Garcia-Olano, and Byron C. Wallace. Measuring\nai \"slop\" in text, 2026. URL https://arxiv.org/abs/2509.19163.\n14"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 15,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nTheodore Sturgeon. Tiny and the monster. In Isaac Asimov and Martin H. Greenberg (eds.),\nIsaac Asimov Presents The Great SF Stories 9 (1947). DAW Books, 1983. Originally published\nin Astounding Science Fiction, May 1947.\nMingjie Sun, Yida Yin, Zhiqiu Xu, J Zico Kolter, and Zhuang Liu. Idiosyncrasies in large\nlanguage models. In Forty-second International Conference on Machine Learning, 2025. URL\nhttps://openreview.net/forum?id=FCZ3jVzmTZ.\nKimi Team. Kimi k2.5: Visual agentic intelligence, 2026. URL https://arxiv.org/abs/2602.\n02276.\nKatherine Thai, Bradley Emi, Elyas Masrour, and Mohit Iyyer. Editlens: Quantifying\nthe extent of AI editing in text. In The Fourteenth International Conference on Learning\nRepresentations, 2026. URL https://openreview.net/forum?id=gOkitaPCfZ.\nYufei Tian, Tenghao Huang, Miri Liu, Derek Jiang, Alexander Spangher, Muhao Chen,\nJonathan May, and Nanyun Peng. Are large language models capable of generating\nhuman-level"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 15,
+    "chunk_id": 1,
+    "text": "ang, Miri Liu, Derek Jiang, Alexander Spangher, Muhao Chen,\nJonathan May, and Nanyun Peng. Are large language models capable of generating\nhuman-level narratives? In Yaser Al-Onaizan, Mohit Bansal, and Yun-Nung Chen (eds.),\nProceedings of the 2024 Conference on Empirical Methods in Natural Language Processing,\npp. 17659–17681, Miami, Florida, USA, November 2024. Association for Computational\nLinguistics. doi: 10.18653/v1/2024.emnlp-main.978. URL https://aclanthology.org/\n2024.emnlp-main.978/.\nEllis Paul Torrance. Torrance Tests of Creative Thinking: Norms-Technical Manual: Verbal Tests,\nForms A and B; Figural Tests, Forms A and B. Personnel Press, 1966.\nNafis Irtiza Tripto, Saranya Venkatraman, Mahjabin Nahar, and Dongwon Lee. Beyond\ncheckmate: Exploring the creative choke points for AI generated texts. In Proceedings of\nthe 2025 Conference on Empirical Methods in Natural Language Processing, pp. 11953–11970,\nSuzhou, China, 2025. Association for Computational Linguistics. doi:"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 15,
+    "chunk_id": 2,
+    "text": "Conference on Empirical Methods in Natural Language Processing, pp. 11953–11970,\nSuzhou, China, 2025. Association for Computational Linguistics. doi: 10.18653/v1/2025.\nemnlp-main.600. URL https://aclanthology.org/2025.emnlp-main.600/.\nU.S. Copyright Office. Copyright registration guidance: Works containing material gener-\nated by artificial intelligence, 2023. https://www.copyright.gov/ai/ai_policy_guidance.\npdf.\nU.S. Supreme Court. Feist Publications, Inc. v. Rural Telephone Service Co. 499 U.S. 340,\n1991. U.S. Supreme Court.\nManya Wadhwa, Tiasa Singha Roy, Harvey Lederman, Junyi Jessy Li, and Greg Durrett.\nCreate: Testing llms for associative creativity, 2026. URL https://arxiv.org/abs/2603.\n09970.\nZihan Wang, Jingbo Shang, and Ruiqi Zhong. Goal-driven explainable clustering via\nlanguage descriptions. In Houda Bouamor, Juan Pino, and Kalika Bali (eds.), Proceedings\nof the 2023 Conference on Empirical Methods in Natural Language Processing, pp. 10626–10649,\nSingapore, December 2023."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 15,
+    "chunk_id": 3,
+    "text": "Kalika Bali (eds.), Proceedings\nof the 2023 Conference on Empirical Methods in Natural Language Processing, pp. 10626–10649,\nSingapore, December 2023. Association for Computational Linguistics. doi: 10.18653/v1/\n2023.emnlp-main.657. URL https://aclanthology.org/2023.emnlp-main.657/.\nBenjamin Warner, Antoine Chaffin, Benjamin Clavié, Orion Weller, Oskar Hallström, Said\nTaghadouini, Alexis Gallagher, Raja Biswas, Faisal Ladhak, Tom Aarsen, Griffin Thomas\nAdams, Jeremy Howard, and Iacopo Poli. Smarter, better, faster, longer: A modern\nbidirectional encoder for fast, memory efficient, and long context finetuning and inference.\nIn Wanxiang Che, Joyce Nabende, Ekaterina Shutova, and Mohammad Taher Pilehvar\n(eds.), Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics\n(Volume 1: Long Papers), pp. 2526–2547, Vienna, Austria, July 2025. Association for Com-\nputational Linguistics. ISBN 979-8-89176-251-0. doi: 10.18653/v1/2025.acl-long.127."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 15,
+    "chunk_id": 4,
+    "text": "), pp. 2526–2547, Vienna, Austria, July 2025. Association for Com-\nputational Linguistics. ISBN 979-8-89176-251-0. doi: 10.18653/v1/2025.acl-long.127. URL\nhttps://aclanthology.org/2025.acl-long.127/.\nWeijia Xu, Nebojsa Jojic, Sudha Rao, Chris Brockett, and Bill Dolan. Echoes in ai: Quantifying\nlack of plot diversity in llm outputs. Proceedings of the National Academy of Sciences, 122(35):\ne2504966122, 2025a. doi: 10.1073/pnas.2504966122. URL https://www.pnas.org/doi/\nabs/10.1073/pnas.2504966122.\n15"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 16,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nYihuai Xu, Yongwei Wang, Yifei Bi, Huangsen Cao, Zhouhan Lin, Yu Zhao, and Fei Wu.\nTraining-free LLM-generated text detection by mining token probability sequences. In\nThe Thirteenth International Conference on Learning Representations, 2025b. URL https:\n//openreview.net/forum?id=vo4AHjowKi.\nYiming Zhang, Harshita Diddee, Susan Holm, Hanchen Liu, Xinyue Liu, Vinay Samuel,\nBarry Wang, and Daphne Ippolito. Noveltybench: Evaluating creativity and diversity\nin language models. In Second Conference on Language Modeling, 2025a. URL https:\n//openreview.net/forum?id=XZm1ekzERf.\nZiyin Zhang, Zihan Liao, Hang Yu, Peng Di, and Rui Wang. F2llm technical report: Matching\nsota embedding performance with 6 million open-source data, 2025b. URL https://arxiv.\norg/abs/2510.02294.\n16"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 17,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nStatistic\nValue\nPrompts / human stories\n10,272\nTarget words (mean / median)\n6,242 / 5,000\nTarget words (IQR)\n3,000–7,000\nHuman story words (mean / median)\n6,403 / 5,035\nHuman story words (IQR)\n2,930–7,650\nTable 4: Human-corpus summary. All stories extracted from Books3..\nModel\nn\nCoverage\nMean words\nMedian words\nMean ∆words\nMean abs. % err.\nWithin 10%\nGemini 3 Flash\n10,261\n99.9%\n3,155\n2,967\n-3,089\n36.9%\n19.4%\nGPT-5.4\n10,272\n100.0%\n6,651\n6,515\n409\n40.2%\n9.6%\nClaude Sonnet 4.6\n10,259\n99.9%\n6,817\n6,187\n575\n16.6%\n38.4%\nDeepSeek V3.2\n10,272\n100.0%\n2,946\n2,693\n-3,296\n39.9%\n12.8%\nKimi K2.5\n10,272\n100.0%\n3,274\n3,005\n-2,968\n35.2%\n15.6%\nTable 5: Length and coverage statistics for AI-generated stories in the finalized six-model\ndataset. Word-target adherence is computed against the explicit “approximately N words”\ninstruction embedded in each prompt; ∆is signed model-word-count minus target-word-\ncount.\nA\nData\nInformation about our human-written corpus"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 17,
+    "chunk_id": 1,
+    "text": "N words”\ninstruction embedded in each prompt; ∆is signed model-word-count minus target-word-\ncount.\nA\nData\nInformation about our human-written corpus depicted in Table 4. Information on average\nlength of generated stories, as well as how well models adhered to length based instructions\nare in Table 5 and shown in Figure 4. Story generation costs varied widely by model and\nwas completed for a total cost of roughly $2800 USD. Extracting features from Gemini 3\nFlash (Gemini Team, 2025b) over the entire story-corpus cost roughly $1600 USD. All stories\nwere generated with a maximum length of 128,000 tokens, except for Gemini 3 Flash, whose\nmaximum token limit is 65,536.\nB\nSTORYSCOPE Details\nBlinding Protocol\nThroughout the pipeline, sources identities are anonymized in all LLM-\nfacing prompts. Within pairwise template comparisons, presentation order is randomized\nto reduce positional bias while keeping the comparisons reproducible.\nAre templates truly needed?\nWe ran early stage testing on"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 17,
+    "chunk_id": 2,
+    "text": "on order is randomized\nto reduce positional bias while keeping the comparisons reproducible.\nAre templates truly needed?\nWe ran early stage testing on the full pipeline with and with-\nout template extraction, the only difference being whether the comparative analysis operates\non templates or raw story text. The two variants discover qualitatively different features:\ncomparing the top-20 discriminative features, only 6 overlap. The direct pipeline’s features\nare style-heavy (humor usage, vocabulary register, allusion types, dominant imagery), while\nthe template pipeline’s are structure-heavy (emotional arcs, relationship trajectories, event\ndensity, flashback usage).\nMeta-Analysis Batching Details\nThe cross-author comparative analysis operates over\n100 development prompts, each with six sources templates. We batch prompt sets greedily\nby estimated token count, treating the combined size of the six templates for a prompt\nas the batching unit; this yields 32 batches, averaging 3.1"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 17,
+    "chunk_id": 3,
+    "text": "ily\nby estimated token count, treating the combined size of the six templates for a prompt\nas the batching unit; this yields 32 batches, averaging 3.1 prompts per batch. A parallel\nGemini-3-Flash run permits fewer, larger batches but produces substantially fewer features,\nso we retain the GPT-5.1 outputs.\nFeature deduplication.\nFeature discovery produces 408 candidate features, many of which\ncapture overlapping concepts (e.g., “metanarrative self-awareness” and “self-reflexive narra-\ntion”). We deduplicate them with embedding-based clustering: each feature is represented\nby its name, question, and detection method, encoded with F2LLM-4B Zhang et al. (2025b),\nthen clustered with single linkage at cosine threshold 0.85. We keep the feature nearest each\ncluster centroid as the representative, reducing the taxonomy from 408 to 304 features (25.5%\n17"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 18,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nHuman\nGPT-5.4\nClaude Sonnet 4.6\nDeepSeek V3.2\nKimi K2.5\nGemini 3 Flash\n0\n2500\n5000\n7500\n10000\n12500\n15000\n17500\nStory length (words)\nDistribution of story lengths across all stories\nFigure 4: Boxplots of story lengths across all stories in the finalized six-sources dataset,\nshown separately for the human corpus and each model. Boxes show the interquartile\nrange, center lines show medians, and whiskers show the non-outlier range.\nreduction) and merging 65 multi-feature clusters. We use 0.85 because 0.90 left many clear\nduplicates unmerged (372 features total), whereas thresholds above 0.85 quickly stopped\nmerging semantically overlapping features that differed only slightly in wording.\nFeature Taxonomy Details\nThe final taxonomy contains d = 304 interpretable narrative\nfeatures spanning five response types Table 6 summarizes the final distribution of feature\ntypes and gives one full illustrative feature entry for each type.\nStyle"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 18,
+    "chunk_id": 1,
+    "text": "ning five response types Table 6 summarizes the final distribution of feature\ntypes and gives one full illustrative feature entry for each type.\nStyle boundary.\nStyle features concern sentence- and phrase-level texture (diction, syntax,\nrhythm, figurative density, tonal register, and prose-level allusion), whereas non-style\nfeatures concern narrative content and structure (events, causality, closure, character roles,\nrelationship topology, setting, and temporal arrangement). For gray-zone cases, our rule\nis simple: if a feature can only be answered from prose texture, it is style; if it is primarily\nabout narrative content and prose choices are incidental, it is non-style. Sensory Density,\nDepth of Interior Access, and Chronological Discontinuity fall on the non-style side of this rule.\nWe conducted a style-dependence audit over all 304 taxonomy features, prompting GPT-5.4\n(OpenAI, 2026) to rate each as high, medium, or low style dependence. For the strict narrative\nvariant used in"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 18,
+    "chunk_id": 2,
+    "text": "04 taxonomy features, prompting GPT-5.4\n(OpenAI, 2026) to rate each as high, medium, or low style dependence. For the strict narrative\nvariant used in the final numbers, the exclusion set contains 47 features. This leaves 257\nfeatures in the strict non-style taxonomy used by the final narrative runs.\nC\nApplication of features.\nWhy not single shot application?\nWe compared single-call application against aspect-\nbased application over 12 story files. Aspect-based application produced far more complete\nfeature vectors: average coverage rose from 68.4% of features to 95.4% of features. The\nremaining aspect-based misses were concentrated in a small number of harder-to-apply\nfeatures, mostly in setting, whereas single-call application showed broad systematic dropout,\nespecially in revelation and temporal-structure features. Later dimensions are omitted more\n18"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 19,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nType\nCount\nFeature\nDetails\nCategorical\n124\nDominant\nnarrative\nperson (Perspective)\nQuestion: What is the primary grammatical person used by the main narra-\ntor across the story?\nDescription: Identify the default pronoun/verb alignment in narrative\n(not dialogue): ‘I/we’, ‘you’, ‘he/she/they’. If no dominant usage, mark\n‘mixed_no_dominant’.\nAnswer\nchoices:\n‘first_person’;\n‘second_person’;\n‘third_person’;\n‘mixed_no_dominant’.\nOrdinal\n59\nSecondary\ncharacter\ndensity (Agents)\nQuestion: How many distinct secondary/supporting characters appear in\nthe story?\nDescription: Include minor or functional characters; exclude major cast\nfrom AGENT_ID_001. Map counts to bins.\nAnswer choices: ‘0–1’; ‘2–3’; ‘4–7’; ‘8+’.\nScale\n45\nDyadic vs Group Scene\nEmphasis (Social Net-\nworks)\nQuestion: To what extent do key interactions occur in dyads versus groups?\nDescription: Evaluate major scenes. Rate 1 = mostly dyads, 3 = balanced, 5\n= mostly groups.\nAnswer choices:"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 19,
+    "chunk_id": 1,
+    "text": "interactions occur in dyads versus groups?\nDescription: Evaluate major scenes. Rate 1 = mostly dyads, 3 = balanced, 5\n= mostly groups.\nAnswer choices: ‘1’; ‘2’; ‘3’; ‘4’; ‘5’.\nBinary\n44\nFourth-Wall Breaking\n(Situatedness)\nQuestion: Does the narration directly address the reader?\nDescription: Look for explicit audience address (e.g., ‘dear reader’). Ignore\nin-world dialogue.\nAnswer choices: ‘no’; ‘yes’.\nMulti-select\n32\nGlobal\nNarrative\nSchema (Events)\nQuestion: Which high-level narrative schemas are central?\nDescription: Identify structural patterns such as journey, mystery, transfor-\nmation, ordeal, slice-of-life, trial, heist, or framed recollection.\nAnswer choices: ‘quest/journey’; ‘investigation/mystery’; ‘transforma-\ntion/redemption’; ‘siege/ordeal’; ‘slice_of_life’; ‘trial/test/game’; ‘heist/ca-\nper’; ‘frame_confession/memoir’.\nTable 6: Distribution of feature types in the feature taxonomy. An example feature for each\ntype, with the question, description, and answer given, to"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 19,
+    "chunk_id": 2,
+    "text": "Table 6: Distribution of feature types in the feature taxonomy. An example feature for each\ntype, with the question, description, and answer given, to illustrate the type of features\nsearched for.\nComparison\nEncoded exact agreement (%)\nCohen’s κ\nAnnotator 1 vs model\n91.67\n0.9056\nAnnotator 2 vs model\n79.86\n0.7724\nMean human vs model\n85.76\n0.8390\nHuman vs human\n76.85\n0.7385\nTable 7: Human validation on 240 story-features across 12 stories.\noften in the single-call set up, while the aspect-based variant preserves near-complete\ncoverage by restricting each call to one narrative dimension.\nExtractor reliability.\nWe evaluate the reliability of Gemini 3 Flash (minimal thinking) as the\nproduction feature extractor via a repeated-measures design. This yields 300 total extraction\noutputs and, for fully present items, 600 within-item run pairs. We use the minimal thinking\nvariant due to the much lower cost. Since we give full stories as part of the input context,\nhaving thinking on makes Gemini"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 19,
+    "chunk_id": 3,
+    "text": "use the minimal thinking\nvariant due to the much lower cost. Since we give full stories as part of the input context,\nhaving thinking on makes Gemini think for a very long time, even for the simple feature\nassignment tasks. On a smaller test of full vs. minimal thinking, the minimal thinking\ncaused a 0.45% reduction in performance on the binary task and an 11.61% increase in\nperformance on the 6-way attribution task. Aggregate inter-run agreement across the five\nruns is Krippendorff’s α (nominal) = 0.90, mean pairwise Cohen’s κ = 0.89.\nHuman validation against annotators.\nWe ran a small human validation study over 12\nstories, 240 story-feature items per annotator. Two annotators completed the full set. We\nreport agreement in that encoded representation. Against the model assignments, cohens\nκ = 0.91 for annotator 1 and cohens κ = 0.7724 for annotator 2; the mean human–model\ncohens κ is therefore 0.84 (see Table 7). Human–human encoded agreement on the same\nsubset is cohens κ ="
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 19,
+    "chunk_id": 4,
+    "text": "0.7724 for annotator 2; the mean human–model\ncohens κ is therefore 0.84 (see Table 7). Human–human encoded agreement on the same\nsubset is cohens κ = 0.74.\n19"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 20,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nD\nExperimental Set Up\nModel selection.\nWe compared linear classifiers, random forests, and XGBoost on the vali-\ndation split (100 prompts, 600 stories). XGBoost consistently outperformed the alternatives\non both binary and multiclass tasks, and integrates cleanly with SHAP-based interpretability\nanalyses (Lundberg & Lee, 2017; Lundberg et al., 2020), so we adopt it as the default classifier\nthroughout.\nBaseline setup.\nWe evaluate four external baselines that operate on raw story text, without\naccess to the LLM-extracted narrative features.\n1. Stylometric baseline. We extract 144 surface features from each story, including\nsentence-, word-, and paragraph-length statistics, document-level counts, vocabu-\nlary richness metrics, 100 function-word frequencies, punctuation rates, dialogue\nfeatures, and readability indices.\n2. TF-IDF baseline. We fit a unigram/bigram TF-IDF vectorizer. The resulting matrix\nis passed through the same XGBoost sweep"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 20,
+    "chunk_id": 1,
+    "text": "and readability indices.\n2. TF-IDF baseline. We fit a unigram/bigram TF-IDF vectorizer. The resulting matrix\nis passed through the same XGBoost sweep and train/val/test protocol as the\nstylometric baseline.\n3. ModernBERT baseline. We fine-tune ModernBERT-base (Warner et al., 2025) directly\non raw story text using the same train/val/test split.\n4. Binoculars. We run Binoculars in accuracy mode with all other settings left at their\ndefaults.\nFeature encoding.\nFor the binary task we set XGBoost’s scale_pos_weight= 5 to match\nthe 5:1 AI-to-human class ratio. Multiclass uses uniform class weights. Features are encoded\nwith one-hot columns for nominal and binary types and explicit integer encoding for ordinal\nand scale types.\nEvaluation protocol.\nThe final split layout is 7,383 train / 1,405 val / 1,384 test prompts.\nWe tune hyperparameters on the validation split, then retrain each final model on train+val\n(8,788 prompts; 52,707 stories) and report all final results on the held-out test"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 20,
+    "chunk_id": 2,
+    "text": "on the validation split, then retrain each final model on train+val\n(8,788 prompts; 52,707 stories) and report all final results on the held-out test set (1,384\nprompts, 8,301 stories). For binary classification, we report macro-F1 and AUPRC.19 For\n6-way attribution, we report macro-F1 and accuracy.\nFeature role assignment.\nA feature is marked important if ¯sj exceeds the top-quartile\nthreshold on mean absolute SHAP across features. Among important features, j is labeled\nstable-important iff (i) stabj is at least the median stability score among important features\nand (ii) its mean SHAP exceeds the 95th-percentile null-label baseline with permutation\np ≤0.10; otherwise it is unstable-important. Non-important features with above-median\nstability are labeled stable-weak, and the remainder are noise.\nCore features come from the binary SHAP analysis and must satisfy all of the following:\nstable-important quadrant membership, null significance, stabj ≥0.55, top25j ≥0.60, abso-\nlute"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 20,
+    "chunk_id": 3,
+    "text": "ry SHAP analysis and must satisfy all of the following:\nstable-important quadrant membership, null significance, stabj ≥0.55, top25j ≥0.60, abso-\nlute human–AI mean-value gap at least 0.20, and cross-model AI spread at most 0.35.\nE\nDimension-level ablations\nDimension-only retrains the classifier on a single NarraBench dimension; leave-one-out retrains\nit on all narrative features except that dimension’s, both under the protocol of §D. No\ndimension is individually sufficient (best: agents at 80.2% binary macro-F1) and none is\nindividually necessary (worst removal: agents at −1.2), so the signal is redundant across\ncorrelated dimensions. This is expected, since AI-generated fiction has a recognizable style:\ne.g., more linear plots, tighter causal structure, more explicit thematic framing, and less\ndiverse character and social structure often co-occur.\n19With 5:1 class imbalance a trivial all-AI classifier achieves 83.3% accuracy, so we omit accuracy\nfrom the binary table and rely on"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 20,
+    "chunk_id": 4,
+    "text": "often co-occur.\n19With 5:1 class imbalance a trivial all-AI classifier achieves 83.3% accuracy, so we omit accuracy\nfrom the binary table and rely on macro-F1 and AUPRC.\n20"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 21,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nDimension only\nLeave-one-dimension-out\nDimension\nBinary\n6-way\nDimension\nBinary\n6-way\nAgents\n80.2\n46.0\nAgents\n92.0 (−1.2)\n66.3 (−2.1)\nSituatedness\n77.3\n41.3\nSituatedness\n92.3 (−0.8)\n66.1 (−2.3)\nPlot\n74.5\n40.5\nPerspective\n92.6 (−0.6)\n67.3 (−1.2)\nPerspective\n71.3\n32.3\nSetting\n92.8 (−0.4)\n66.8 (−1.7)\nSetting\n70.6\n38.4\nEvents\n92.8 (−0.4)\n67.4 (−1.0)\nSocial networks\n67.9\n38.3\nPlot\n92.8 (−0.4)\n67.5 (−0.9)\nEvents\n67.8\n37.4\nTemporal structure\n93.0 (−0.2)\n65.4 (−3.1)\nRevelation\n67.2\n33.2\nSocial networks\n93.0 (−0.2)\n67.8 (−0.6)\nTemporal structure\n62.0\n37.7\nRevelation\n93.5 (+0.3)\n67.7 (−0.7)\nAll narrative\n93.2\n68.4\nAll narrative\n93.2\n68.4\nTable 8: Per-dimension ablations of the narrative model, macro-F1 (%). Left: trained on one\nNarraBench dimension only. Right: trained on all narrative features except that dimension,\nwith the change relative to the full narrative model in parentheses.\nF\nMemorization-Risk in story generation\nBecause the human corpus"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 21,
+    "chunk_id": 1,
+    "text": "that dimension,\nwith the change relative to the full narrative model in parentheses.\nF\nMemorization-Risk in story generation\nBecause the human corpus includes stories that are likely to be widely available on the\npublic web and in Books3-adjacent collections, we run a conservative contamination-risk\naudit over the reverse-engineered outputs. Memorization could lead to the inclusion of\nstyle atypical to AI=writing. We flag exact overlap when the pair shares at least one exact\n13-gram beyond split-matched shuffled-human controls, as done in prior work (Brown\net al., 2020), and near-verbatim overlap when paired 8-gram coverage is at least 5%, the pair\nshares at least four distinct 8-grams, and the longest exact common span is at least 30 tokens,\nagain beyond shuffled-human controls. We measure output overlap rather than formal\ntraining-set membership, so we treat it as a sensitivity analysis rather than proof that a\nmodel saw a specific story during pretraining. Risk rates in Table"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 21,
+    "chunk_id": 2,
+    "text": "g-set membership, so we treat it as a sensitivity analysis rather than proof that a\nmodel saw a specific story during pretraining. Risk rates in Table 9.\nModel\nExact 13-gram\nNear-verbatim\nGPT-5.4\n64 (0.63%)\n7 (0.07%)\nDeepSeek V3.2\n58 (0.57%)\n13 (0.13%)\nKimi K2.5\n44 (0.43%)\n7 (0.07%)\nGemini 3 Flash\n119 (1.17%)\n32 (0.32%)\nClaude Sonnet 4.6\n67 (0.66%)\n14 (0.14%)\nTable 9: Memorization-risk rates by model.\nThe memorization screen flags 352 of 50,672 evaluated generated-story comparisons (0.70%)\nas high risk. Under the conservative prompt-level ablation rule, this removes 169 of 10,139\naudited prompts (1.67%). The strongest cases are concentrated in canonical or heavily\nreprinted texts such as The Yellow Wallpaper, The Legend of Sleepy Hollow, Heart of Darkness,\nThe Call of Cthulhu, and other Poe, Doyle, Wilde, and Dickens stories.\nDropping the high-risk prompts leaves the main detectability conclusions essentially un-\nchanged. In the filtered rerun, the Narrative + Style model improves"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 21,
+    "chunk_id": 3,
+    "text": "g the high-risk prompts leaves the main detectability conclusions essentially un-\nchanged. In the filtered rerun, the Narrative + Style model improves slightly from 96.00 to\n96.06 macro-F1 in binary detection and from 77.29 to 77.56 macro-F1 in 6-way attribution;\nthe Narrative-only model shifts from 93.18 to 93.23 in binary and from 68.42 to 68.68 in\nmulticlass (see Table 10).\nG\nAdditional Analysis\nDoes length matter for narrative detection?\nHuman stories are substantially longer than\nAI stories on the held-out final test split (human mean / median = 6418/4973 words; AI\nmean / median = 4523/3355). To test whether binary detectability is primarily a length\nartifact, we run two additional analyses. We freeze the final binary classifiers from section 4\n21"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 22,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nVariant\nOriginal test macro-F1\nLow-risk test macro-F1\n∆\nNarrative + Style (binary)\n96.00\n96.06\n+0.06\nNarrative + Style (multiclass)\n77.29\n77.56\n+0.27\nNarrative (binary)\n93.18\n93.23\n+0.05\nNarrative (multiclass)\n68.42\n68.68\n+0.26\nTable 10: Sensitivity of the final detectability results after dropping all high-risk prompts.\nModel\nSetting\nMacro-F1 (%)\nHuman-F1\nBal. Acc.\nAUPRC\nLength only\nFull test\n55.9\n0.330\n0.597\n0.261\nStyle Only\nFull test\n85.8\n0.766\n0.871\n0.867\nStyle Only\nLength-matched test\n86.8\n0.859\n0.869\n0.956\nNarrative\nFull test\n93.2\n0.886\n0.932\n0.959\nNarrative\nLength-matched test\n93.2\n0.929\n0.932\n0.990\nNarrative + Style\nFull test\n96.0\n0.933\n0.956\n0.982\nNarrative + Style\nLength-matched test\n95.7\n0.956\n0.957\n0.996\nTable 11: Held-out final-test length-confound audit. “Length only” is a logistic regression\ntrained on train+val story word counts alone. “Length-matched test” reuses the frozen final\nbinary models but evaluates them on a"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 22,
+    "chunk_id": 1,
+    "text": "logistic regression\ntrained on train+val story word counts alone. “Length-matched test” reuses the frozen final\nbinary models but evaluates them on a 2,754-story subset (1,377 human, 1,377 AI) formed by\nstratifying AI stories into human-derived length deciles and sampling without replacement.\nand re-evaluate them on a decile-stratified length-matched test subset with 2,754 stories\n(1,377 human, 1,377 AI) and nearly identical medians (human 4,973 vs. AI 4,951 words).\nThe Narrative model is unchanged (93.2% macro-F1 before and after matching), indicating\nthat the main separation is not driven by the trivial human-longer / AI-shorter length\ncontrast. The Style Only model is similarly stable, moving from 85.8% to 86.8% macro-F1\nafter matching. Because that matched-subset comparison alone does not establish perfect\nlength invariance, we also evaluate the same frozen models separately on short, medium,\nand long bands defined by human-story tertiles within the matched subset."
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 22,
+    "chunk_id": 2,
+    "text": "riance, we also evaluate the same frozen models separately on short, medium,\nand long bands defined by human-story tertiles within the matched subset. Narrative\nmacro-F1 remains 91.6 / 94.3 / 93.7 across these bins, Narrative + Style remains 95.0 / 96.2 /\n95.9, and Style Only remains 86.4 / 86.5 / 87.4, showing little variation with length overall.\nHum.\nCla.\nGPT\nGem.\nDS\nKimi\nNarr. + Style\n0.93\n0.89\n0.82\n0.67\n0.66\n0.67\nNarrative\n0.89\n0.77\n0.73\n0.60\n0.57\n0.55\nTable 12: Per-class F1 for 6-way attribution. Hu-\nman writing is easiest to classify, while Gemini,\nDeepSeek, and Kimi have the lowest performance.\nDoes topic matter for detection?\nWe\nalso examined whether performance\nvaries by story topic. We prompted\nQwen3.5-9B (Alibaba Cloud, 2026) to\ngive a Book Industry Standards and\nCommunications (BISAC) code (Book\nIndustry Study Group, 2024) given a\nstory text, and apply this over the test\nset. Stories are categorized into 12 top-\nics but only 6 have at least 20 test prompts. For the"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 22,
+    "chunk_id": 3,
+    "text": "2024) given a\nstory text, and apply this over the test\nset. Stories are categorized into 12 top-\nics but only 6 have at least 20 test prompts. For the Narrative model, binary macro-F1 ranges\nfrom 90.0% (mystery/detective) to 96.2% (historical), while 6-way macro-F1 ranges from\n65.8% (mystery/detective) to 70.8% (science fiction).\nTo test whether mean detection performance differs by topic, we computed prompt-level test\naccuracy within each prompt’s majority topic and ran a Kruskal–Wallis omnibus test over\nthe six topics with at least 20 test prompts (literary, science fiction, horror, action/adventure,\nfantasy, mystery/detective). We find no significant topic-wise differences: H=4.69, p=0.46.\nSo topic shifts the point estimates somewhat, especially for multiclass attribution, but we\ndo not find strong evidence that detectability changes systematically by topic.\nH\nPer-story rarity analysis.\nThe group-level centroid and dispersion statistics above characterize sources regions but do\nnot"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 22,
+    "chunk_id": 4,
+    "text": "systematically by topic.\nH\nPer-story rarity analysis.\nThe group-level centroid and dispersion statistics above characterize sources regions but do\nnot directly measure whether individual human stories are more structurally unusual. To\noperationalize the originality definition from §1, we compute per-story rarity as the mean\nEuclidean distance to a story’s k = 25 nearest neighbors in the pooled train+val narrative\n22"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 23,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nTail\nHuman\nClaude\nGPT\nDeepSeek\nKimi\nGemini\nTop 1%\n42\n5\n5\n11\n6\n14\nTop 5%\n180\n33\n34\n58\n64\n45\nTop 10%\n340\n66\n71\n127\n135\n88\nTable 13: Composition of the rarest test-set stories by sources. Counts are out of 8,262 test\nstories (1,377 per sources). Human stories are overrepresented in all tails relative to a 1\n6\nbaseline, but AI stories are present throughout.\nspace. Rarity percentiles are computed against the train+val rarity distribution: a story at\nthe 90th percentile sits in a sparser region of narrative space than 90% of all train+val stories.\nAll effect sizes here are computed over individual stories, not per-prompt summaries.\nFigure 5 shows the per-sources rarity distributions on the held-out test set. Human stories\nare shifted toward higher rarity (mean percentile 0.71 vs. 0.49 for AI, AUC = 0.73). Using the\nstandard sample-size-weighted pooled SD over the 1,377 human and 6,885 AI test stories\ngives Cohen’s d = 0.83, with sample SDs of"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 23,
+    "chunk_id": 1,
+    "text": "C = 0.73). Using the\nstandard sample-size-weighted pooled SD over the 1,377 human and 6,885 AI test stories\ngives Cohen’s d = 0.83, with sample SDs of 0.227 for human stories and 0.274 for pooled AI\nstories and a pooled SD of 0.267.\nAt the prompt level, the human story is rarer than all five AI alternatives 57.8% of the time\n(mean margin = 0.96 raw distance units). The rarest test-set tail is mixed: the top 1% contains\n42 human and 41 AI stories; the top 5% contains 180 human vs. 234 AI; the top 10% contains\n340 human vs. 487 AI stories across five models (Table 13).\nHuman\nGPT\nClaude\nDeepSeek\nKimi\nGemini\n0.0\n0.2\n0.4\n0.6\n0.8\n1.0\nRarity percentile (vs. train+val)\nPer-story narrative rarity by author (test set)\nFigure 5: Per-story narrative rarity percentiles by sources on the held-out test set. Solid lines\nshow means; dashed lines show medians. Human stories are shifted toward higher rarity\nbut all distributions overlap substantially.\nI\nCore and Fingerprint Features\nTable 14 lists the"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 23,
+    "chunk_id": 2,
+    "text": "edians. Human stories are shifted toward higher rarity\nbut all distributions overlap substantially.\nI\nCore and Fingerprint Features\nTable 14 lists the 20 features that reliably characterize AI writing in the binary task, ranked\nby a core score computed as mean SHAP multiplied by stability score and by one plus the\nabsolute human–AI gap for the qualifying encoded column.\nTable 15 lists the 13 features that reliably characterize human writing, ranked by the same\ncore score.\n23"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 24,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n#\nFeature\nQuestion\nDim\nType\nResponse Options\n1\nThematic Explicitness and\nMoralizing\nHow explicitly does the story\narticulate its themes or morals?\nSIT\nscale\n1–5\n2\nDominant Emotional Ex-\npression →embodied\nHow are characters’ emotions\nmost commonly conveyed?\nAGENT\ncat\nexplicit\nlabels,\nembodied\nmetaphors,\nbehavioral\ncues,\nambiguous\n3\nThematic Unity\nTo what extent do subplots and\nflourishes serve a central the-\nmatic concern?\nPLT\nscale\n1–5\n4\nDominant Sensory Modal-\nities →olfactory\nWhich sensory modalities does\nthe story most frequently en-\ngage?\nSET\nmulti\nvisual, auditory, olfactory, tactile,\ngustatory, kinesthetic\n5\nCharacter Introduction →\nexternal description\nWhat narrative device primar-\nily introduces the central char-\nacter?\nAGENT\ncat\nexternal_desc,\nin-action,\nin-\ndialogue,\ninner_thought,\nothers_reports\n6\nSetting as Psychological\nMirror\nTo what degree does physical\nenvironment mirror characters’\ninner"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 24,
+    "chunk_id": 1,
+    "text": "ction,\nin-\ndialogue,\ninner_thought,\nothers_reports\n6\nSetting as Psychological\nMirror\nTo what degree does physical\nenvironment mirror characters’\ninner states?\nSET\nscale\n1–5\n7\nContinuity\nof\nMain\nCausal Chain\nHow continuous is the single\ncausal chain from inciting inci-\ndent to ending?\nEVT\nscale\n1–5\n8\nSensory Density\nHow dense is sensory descrip-\ntion across the narrative?\nSET\nscale\nminimal–lush\n9\nAgency in Resolution →\nprotagonist choice\nIs resolution driven by pro-\ntagonist’s choices or external\nevents?\nPLT\ncat\nprotagonist_choice, mixed, exter-\nnal_fate\n10\nNarratorial\nThematic\nCommentary →yes\nDoes the narrator explicitly\ncomment on themes beyond\ncharacters’ perspectives?\nSIT\nbinary\nno, yes\n11\nOpening Spatial Ground-\ning\nHow clearly does the opening\nground the reader in a specific\nphysical setting?\nSET\nord\nnone/vague, minimal, clear lo-\ncal, clear local+global\n12\nDialogue\nFunction\n→\nphilosophical debate\nWhat main functions does dia-\nlogue serve?\nPER\nmulti\nadvance plot,\nreveal"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 24,
+    "chunk_id": 2,
+    "text": "lear lo-\ncal, clear local+global\n12\nDialogue\nFunction\n→\nphilosophical debate\nWhat main functions does dia-\nlogue serve?\nPER\nmulti\nadvance plot,\nreveal charac-\nter, worldbuilding, philosophi-\ncal, comic\n13\nSpatial Granularity Level\nHow fine-grained is the story’s\ndepiction of physical space?\nSET\nord\nvery_low–high\n14\nSubplot Integration →no\nsubplots\nHow directly do subplots echo\nthe central theme?\nPLT\ncat\nno_subplots,\nthemati-\ncally_parallel,\ncontrasting,\nindependent\n15\nMoral\n/\nPhilosophical\nWeighting\nHow heavily does the story\nforeground moral or philosoph-\nical questions?\nSIT\nscale\n1–5\n16\nReference Explicitness →\nimplicit echoes\nAre intertextual gestures pri-\nmarily explicit or diffuse?\nSIT\ncat\nnone, explicit named, implicit\nechoes, balanced mix\n17\nEnvironmental and Eco-\nlogical Emphasis\nHow prominent is the natural\nenvironment or ecology in the\nnarrative?\nSET\nscale\n1–5\n18\nMode of Resolution →in-\nternal understanding\nIs the main event chain re-\nsolved through internal accep-\ntance or"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 24,
+    "chunk_id": 3,
+    "text": "gy in the\nnarrative?\nSET\nscale\n1–5\n18\nMode of Resolution →in-\nternal understanding\nIs the main event chain re-\nsolved through internal accep-\ntance or external action?\nEVT\ncat\nresolved externally, resolved in-\nternally, unresolved\n19\nPre-Threat Character In-\nvestment\nHow much does the story build\ninvestment before major jeop-\nardy?\nREV\nscale\n1–5\n20\nDepth of Interior Access\nHow deep into characters’ in-\nner life does narration go?\nPER\nscale\n1–5\nTable 14: Core AI-characterizing features (20). Dim = NarraBench dimension prefix; Type:\nscale = 1–5 Likert, cat = categorical, ord = ordinal, multi = multi-select, binary = yes/no.\nArrow (→) indicates the specific option value that is elevated for AI.\n24"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 25,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\n#\nFeature\nQuestion\nDim\nType\nResponse Options\n1\nIntertextual\nStrategy\nTypes →explicit named\nreference\nWhat kinds of intertextual en-\ngagement does the story em-\nploy?\nSIT\nmulti\nexplicit named, retelling, pas-\ntiche, myth/religion, self refer-\nential\n2\nFrequency\nof\nDirect\nReader Address\nHow often does the text directly\naddress the reader?\nPER\nord\nnever, occasional asides, frequen-\nt/structural\n3\nReference Explicitness →\nbalanced mix\nAre intertextual gestures ex-\nplicit or diffuse?\nSIT\ncat\nnone, explicit named, implicit\nechoes, balanced mix\n4\nDepth of Recontextualiza-\ntion After Surprise\nHow extensively does a reve-\nlation force reinterpretation of\nearlier scenes?\nREV\nscale\n1 (none)–5 (complete re-reading)\n5\nDialogue-to-Narration\nProportion\nWhat proportion of text is direct\ndialogue vs. narration?\nPER\nscale\n1 (no dialogue)–5 (dialogue dom-\ninates)\n6\nFourth-Wall Permeability\nTo what extent does the story\nbreak the boundary between\nstory-world"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 25,
+    "chunk_id": 1,
+    "text": "on?\nPER\nscale\n1 (no dialogue)–5 (dialogue dom-\ninates)\n6\nFourth-Wall Permeability\nTo what extent does the story\nbreak the boundary between\nstory-world and reader?\nSIT\nord\n1 (no breaking)–4 (radical viola-\ntions)\n7\nSubplot Integration →the-\nmatically parallel\nHow directly do subplots echo\nthe central theme?\nPLT\ncat\nno subplots, thematically paral-\nlel, contrasting, independent\n8\nDegree of Chronological\nDiscontinuity\nHow often does the narrative\njump across time?\nTMP\nscale\n1–5\n9\nLocation Variety Scope\nHow many distinct physical lo-\ncales does the story inhabit?\nSET\nord\nsingle–multiworld\n10\nAnachrony Intensity\nHow heavily does the narra-\ntive rely on flashbacks or flash-\nforwards?\nTMP\nscale\n1\n(absent)–5\n(dominant\nanachronic)\n11\nMoral Polarity Toward\nProtagonist →ambivalent\nDoes the narrative frame the\nprotagonist’s choices as morally\nclear or ambiguous?\nPLT\ncat\nclearly\npositive,\nambivalen-\nt/mixed, clearly negative\n12\nDominant Emotional Ex-\npression →explicit labels\nHow are characters’"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 25,
+    "chunk_id": 2,
+    "text": "r or ambiguous?\nPLT\ncat\nclearly\npositive,\nambivalen-\nt/mixed, clearly negative\n12\nDominant Emotional Ex-\npression →explicit labels\nHow are characters’ emotions\nmost commonly conveyed?\nAGENT\ncat\nexplicit\nlabels,\nembodied\nmetaphors,\nbehavioral\ncues,\nambiguous\n13\nNonlinear Framing for De-\nlayed Disclosure\nTo what extent does the story\nuse time jumps to stage revela-\ntions?\nREV\nscale\n1 (linear)–5 (heavily fragmented)\nTable 15: Core human-characterizing features (13), Arrow (→) indicates the specific option\nvalue elevated for human authors. Abbreviations as in Table 14.\nTable 16 presents all 30 core features organized by interpretive theme, with human and AI\nmean values and gaps. This table is referenced from section 4.\nThe number of fingerprints varies widely across sources (Human: 32, Claude: 26, GPT: 11,\nGemini: 11, DeepSeek: 7, Kimi: 3). Table 17 provides a compact summary.\nJ\nPrompts\nGiven a source story, this prompt asks the model to produce a single concise writing prompt\nthat"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 25,
+    "chunk_id": 3,
+    "text": "i: 3). Table 17 provides a compact summary.\nJ\nPrompts\nGiven a source story, this prompt asks the model to produce a single concise writing prompt\nthat preserves the story’s key characters, setting, and thematic direction while leaving room\nfor variation. Prompt is in Figure 6.\n25"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 26,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nFeature\nHuman\nAI\nGap\nAI-elevated: Thematic over-determination\nThematic Explicitness & Moralizing s\n3.28\n3.94\n−0.65\nMoral / Philosophical Weighting s\n3.26\n3.68\n−0.42\nThematic Unity s\n4.41\n4.74\n−0.33\nNarratorial Thematic Commentary →yes\n52%\n77%\n−25\nDialogue Function →philosophical debate\n34%\n59%\n−25\nReference Explicitness →implicit echoes\n50%\n72%\n−22\nAI-elevated: Sensory & embodied performativity\nEmotional Expression →embodied\n38%\n81%\n−42\nSetting as Psychological Mirror s\n3.58\n4.07\n−0.49\nEnvironmental & Ecological Emphasis s\n2.83\n3.21\n−0.38\nSensory Modalities →olfactory\n57%\n82%\n−26\nSensory Density s\n3.66\n3.93\n−0.26\nDepth of Interior Access s\n3.67\n3.93\n−0.26\nAI-elevated: Structural streamlining\nCausal Chain Continuity s\n3.92\n4.20\n−0.28\nSpatial Granularity o\n2.27\n2.53\n−0.26\nAgency in Resolution →protagonist choice\n46%\n69%\n−23\nCharacter Introduction →external description\n30%\n52%\n−22\nSubplot Integration →no subplots\n57%\n79%\n−22\nResolution Mode"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 26,
+    "chunk_id": 1,
+    "text": "→protagonist choice\n46%\n69%\n−23\nCharacter Introduction →external description\n30%\n52%\n−22\nSubplot Integration →no subplots\n57%\n79%\n−22\nResolution Mode →internal understanding\n27%\n47%\n−21\nOpening Spatial Grounding o\n2.12\n2.33\n−0.20\nPre-Threat Character Investment s\n2.76\n2.99\n−0.23\nHuman-elevated: Intertextual richness\nIntertextual Strategy →explicit named reference\n47%\n24%\n+23\nReference Explicitness →balanced mix\n37%\n16%\n+21\nHuman-elevated: Reader engagement\nFourth-Wall Permeability o\n0.67\n0.39\n+0.28\nDirect Reader Address o\n0.28\n0.07\n+0.21\nHuman-elevated: Temporal complexity\nDepth of Recontextualization After Surprise s\n3.28\n2.95\n+0.34\nChronological Discontinuity s\n2.40\n2.12\n+0.28\nNonlinear Framing for Delayed Disclosure s\n1.96\n1.68\n+0.28\nAnachrony Intensity s\n2.58\n2.31\n+0.27\nHuman-elevated: Narrative diversity\nLocation Variety Scope o\n1.34\n1.08\n+0.26\nDialogue-to-Narration Proportion s\n2.95\n2.70\n+0.24\nSubplot Integration →thematically parallel\n42%\n21%\n+22\nMoral Polarity"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 26,
+    "chunk_id": 2,
+    "text": "riety Scope o\n1.34\n1.08\n+0.26\nDialogue-to-Narration Proportion s\n2.95\n2.70\n+0.24\nSubplot Integration →thematically parallel\n42%\n21%\n+22\nMoral Polarity →ambivalent/mixed\n59%\n38%\n+21\nEmotional Expression →explicit labels\n29%\n8%\n+21\nTable 16: Core features separating human from AI writing, grouped by theme. Features\nmarked s are 1–5 Likert scales (values are means); o are ordinal scales (values are means\nover integer codes); →indicates a specific categorical/binary option (values are prevalence\n%). Gap = Human −AI; negative gaps indicate AI-elevated features. AI column averages\nacross all five models.\n26"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 27,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nAuthor\n#\nFeature\nDim\nSHAP\nUniq.\nHuman\n1\nCharacter introduction →in-dialogue\nAGENT\n0.110\n21.4\n2\nBreadth of focalization →single focal\nPER\n0.083\n15.7\n3\nNarrator address mode →no direct address\nSIT\n0.069\n12.6\n4\nOverall revelation pacing →back-loaded\nREV\n0.094\n7.7\n5\nLiterary ambition →crossover genre\nSIT\n0.116\n6.8\n+ 27 more (visibility of withholding, atmospheric techniques, subplot density, naming, twist placement, . . . )\nClaude\n1\nStrength of event escalation\nEVT\n0.402\n22.4\n2\nEvent-type diversity\nEVT\n0.491\n10.7\n3\nEnding temporal scope →epilogue/flashforward\nTMP\n0.096\n8.9\n4\nDreams/visions as temporal distortion →no\nTMP\n0.116\n7.7\n5\nSetting mood →uncanny/haunted\nSET\n0.059\n4.6\n+ 21 more (event density, conflict modality, relationship trajectory, heteroglossia, closure, . . . )\nGPT\n1\nRole of gossip and rumor →salient\nSOC\n0.200\n22.1\n2\nNarrator temporal distance →distant retrospec-\ntive\nTMP\n0.119\n6.8\n3\nReader expectation strategy"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 27,
+    "chunk_id": 1,
+    "text": "T\n1\nRole of gossip and rumor →salient\nSOC\n0.200\n22.1\n2\nNarrator temporal distance →distant retrospec-\ntive\nTMP\n0.119\n6.8\n3\nReader expectation strategy →subverts\nREV\n0.098\n3.9\n4\nIterative/habitual narration →no\nTMP\n0.144\n3.2\n5\nReconciliation/forgiveness →partial/ambiguous\nSOC\n0.066\n2.6\n+ 6 more (community salience, social emphasis, reader competence, individualization, psych. depth, . . . )\nGemini\n1\nProtagonist social trajectory →expands\nSOC\n0.058\n5.0\n2\nBalance of speech →primarily direct\nPER\n0.119\n3.6\n3\nGlobal narrative schema →siege/ordeal\nEVT\n0.037\n3.5\n4\nNaming practice →named personal name\nAGENT\n0.033\n3.2\n5\nGlobal chronological structure →frequent flash-\nbacks\nTMP\n0.060\n3.1\n+ 6 more (secondary char. density, batch intro, authority stance, setting mood, community, closure)\nDeepSeek\n1\nNarrator presence/visibility\nPER\n0.153\n4.1\n2\nEmotional expression →behavioral cues\nAGENT\n0.069\n3.6\n3\nPlot vs. atmosphere orientation\nSIT\n0.117\n2.9\n4\nBackstory placement →evenly"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 27,
+    "chunk_id": 2,
+    "text": "ty\nPER\n0.153\n4.1\n2\nEmotional expression →behavioral cues\nAGENT\n0.069\n3.6\n3\nPlot vs. atmosphere orientation\nSIT\n0.117\n2.9\n4\nBackstory placement →evenly interleaved\nTMP\n0.096\n2.7\n5\nEmbedded storytelling scenes\nSIT\n0.078\n2.2\n+ 2 more (seasons/cyclical time, . . . )\nKimi\n1\nCharacter introduction →in-action event\nAGENT\n0.163\n3.7\n2\nNarrative entry frame →in medias res\nPLT\n0.035\n3.0\n3\nExplicit trait labeling →no\nAGENT\n0.136\n2.0\nTable 17: Per-sources fingerprint features, showing the top 5 (or all, if fewer) ranked by\nuniqueness ratio. SHAP = mean class SHAP importance; Uniq. = uniqueness ratio vs.\nnext-best class.\n27"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 28,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nPrompt used to generate benchmark writing prompts from source stories\nYou are a creative-writing instructor generating **writing prompts** for published short stories.\nFor the story below, craft one prompt that:\n1. Begins with **\"Write a short story\"** (exact phrase).\n2. Continue the sentence with **\"where...\", \"about...\", \"following...\", or \"from the perspective\nof...\"** and then introduce at least one key character or setting by name. This keeps the\nopening grammatically smooth.\n- If a first-person narrator is unnamed, refer to them as \"the narrator\" without inventing a\nnew name. Otherwise, provide their name explicitly.\n3. Conveys the story's distinctive **essence / theme / style**, giving the writer a clear sense of\nmood and direction, and includes **some concrete details** (character, location, object,\nstriking event) as needed - don't overload with minutiae.\n4. Offers enough narrative guidance to get the writer started (situation +"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 28,
+    "chunk_id": 1,
+    "text": "location, object,\nstriking event) as needed - don't overload with minutiae.\n4. Offers enough narrative guidance to get the writer started (situation + conflict or question to\nexplore) yet leaves room for their own twists.\n5. Do **not** address the reader in second person; keep the prompt in third-person imperative (no\n\"you/your\").\n6. Avoid vague hedge words (*maybe*, *perhaps*, *consider*) **and** absolutely do NOT use\ncomparison phrases or qualifiers such as *like*, *much like*, *similar to*, *reminiscent of*,\n*in the style of*. Refer to the concrete names / details directly. Do not invent character\nnames that do not appear.\n7. Single paragraph <= 120 words.\nReturn ONLY the prompt text--**no extra commentary**. If anything else is included, keep it on the\nsame line separated by a single space.\nSTORY TO ANALYSE:\nbatch_text\nFigure 6: Prompt used to generate benchmark writing prompts from source stories\nWe do not use a single writing template; each story is generated from a standalone"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 28,
+    "chunk_id": 2,
+    "text": "ompt used to generate benchmark writing prompts from source stories\nWe do not use a single writing template; each story is generated from a standalone narrative\nprompt in the Books3-derived prompt set, and the same prompt text is given to all six\nsources. Figure 7 shows one representative validation prompt.\nRepresentative benchmark story-generation prompt\nWrite a short story following Dr. Temperance Brennan, a bioarchaeologist, as she reluctantly lends her\nexpertise to a Charlotte police investigation involving two cases of severely burned human remains. Delve into\nher meticulous process of analyzing charred bones, the shocking medical link she uncovers connected to Dr.\nKeith Millikin and his patients, and how this unexpected plunge into forensic work challenges her academic\ndetachment, forever altering her perspective on the living and the dead, particularly after a personal loss\nwithin the medical examiner's office. Your story must be approximately 18000 words long.\nFigure 7:"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 28,
+    "chunk_id": 3,
+    "text": "ng and the dead, particularly after a personal loss\nwithin the medical examiner's office. Your story must be approximately 18000 words long.\nFigure 7: Representative benchmark story-generation prompt\nAfter story generation, each story is converted into a JSON template with a single extraction\nprompt. Figure 8 shows the exact markdown template.\n28"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 29,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nPrompt for NarraBench template extraction\nYou are a narrative analysis expert. Extract a comprehensive outline from the provided narrative text by\nanswering the questions below. Analyze the text systematically and provide specific evidence for each element\nidentified.\n## Instructions\n- Be objective and avoid interpretation beyond what the text explicitly or implicitly conveys\n- Use null for information not present in the narrative or fields with no applicable items\n- For trajectories and sequences, use arrows (->) to show progression: \"state1 -> state2 -> state3\". Remember,\ntrajectories and sequences are not always linear, but always have to be complete.\n- Keep descriptions concise but specific.\n- **Scale guidance**:\n- **Global** fields require story-level analysis across the entire narrative\n- **Local** fields require scene-level or moment-specific analysis (indicate which scene/moment when\nrelevant)\n## Narrative\nnarrative_text\n##"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 29,
+    "chunk_id": 1,
+    "text": "arrative\n- **Local** fields require scene-level or moment-specific analysis (indicate which scene/moment when\nrelevant)\n## Narrative\nnarrative_text\n## Extraction object schema\nReturn a JSON object with this structure:\n- `story`\n- `agents`\n- `major_characters`: list only major characters who drive the plot or have significant narrative\nimportance\n- each item includes:\n- `name` `(string) [GLOBAL]`: use the character's full name as-is\n- `role` `(string) [GLOBAL]`: narrative and functional role, max 2 short clauses\n- `attributes` `(array of strings) [GLOBAL]`: descriptive traits or phrases\n- `emotion_trajectory` `(string) [GLOBAL]`: initial emotion -> progression -> final emotion\n- `motivation_trajectory` `(string) [GLOBAL]`: initial motivation -> progression -> final motivation\n- `trope` `(string) [GLOBAL]`: trope or archetype, if any\n- `supporting_characters`: meaningful minor characters who are not central to the plot\n- each item includes:\n- `name` `(string) [GLOBAL]`\n- `description`"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 29,
+    "chunk_id": 2,
+    "text": "supporting_characters`: meaningful minor characters who are not central to the plot\n- each item includes:\n- `name` `(string) [GLOBAL]`\n- `description` `(string) [GLOBAL]`: one-line role/significance summary\n- `social_network`\n- `relationships` `(list) [GLOBAL]`: enduring bonds, formatted as `A-B: relationship type and quality`\n- `events`\n- `sequence`: ordered list of concrete beat-level events `[LOCAL]`\n- each item includes `who`, `where`, `what`, and `when`\n- `causality` `(list) [GLOBAL]`: causal links formatted as `event1 -> event2: explanation`\n- `narrative_schema` `(string) [GLOBAL]`: higher-level pattern such as quest, revenge, or coming-of-age\n- `plot`\n- `themes` `(list) [GLOBAL]`\n- `summary` `(string) [GLOBAL]`: 2-3 sentence plot summary\n- `moral` `(string) [GLOBAL]`: one sentence if signaled; else `null`\n- `central_obstacle` `(string) [GLOBAL]`\n- `central_conflict` `(string) [GLOBAL]`\n- `narrative_archetype` `(string) [GLOBAL]`\n- `plot_arc` `(string) [GLOBAL]`: e.g., `rising"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 29,
+    "chunk_id": 3,
+    "text": "string) [GLOBAL]`\n- `central_conflict` `(string) [GLOBAL]`\n- `narrative_archetype` `(string) [GLOBAL]`\n- `plot_arc` `(string) [GLOBAL]`: e.g., `rising action -> climax -> falling action`\n- `setting`\n- `locations` `(list) [LOCAL/GLOBAL]`: include scene-level and story-level locations, with scope noted\n- `time_period` `(string) [GLOBAL]`\n- `atmosphere` `(string) [GLOBAL]`\n- `discourse`\n- `revelation`\n- `suspense` `(string) [GLOBAL]`: what key information is withheld?\n- `curiosity` `(string) [GLOBAL]`: what causal antecedents are withheld?\n- `surprises` `(list) [GLOBAL]`: what was revealed, and when?\n- `temporal_order`\n- `structure` `(string) [GLOBAL]`: choose `linear`, `nonlinear`, or `mixed`\n- `duration` `(string) [GLOBAL]`: overall time span\n- `flashbacks` `(list) [LOCAL]`: note which scenes are flashbacks\n- `time_jumps` `(list) [LOCAL]`: ellipses or leaps in time/place, with scene references\n- `scene_duration` `(list) [LOCAL]`: approximate duration of major scenes\n- `narration`\n-"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 29,
+    "chunk_id": 4,
+    "text": "AL]`: ellipses or leaps in time/place, with scene references\n- `scene_duration` `(list) [LOCAL]`: approximate duration of major scenes\n- `narration`\n- `perspective`\n- `point_of_view` `(string) [GLOBAL]`: choose `1st person`, `2nd person`, `3rd person limited`, or\n`3rd person omniscient`\n- `focalization` `(list) [LOCAL]`: whose perspective we occupy by scene/section\n- `dialogue_speakers` `(list) [LOCAL]`: named speakers by scene/section\n- `style`\n- `allusions` `(list) [LOCAL]`: allusions plus scene/section context\n- `figurative_language` `(list) [LOCAL]`: examples plus scene context\n- `imagery` `(list) [LOCAL]`: vivid sensory descriptions plus scene context\n- `sentence_complexity` `(string) [GLOBAL]`\n- `evaluative_language` `(list) [LOCAL]`: judgmental/evaluative language plus scene context\n29"
+  },
+  {
+    "source": "StoryScope.pdf",
+    "page": 30,
+    "chunk_id": 0,
+    "text": "Published as a conference paper at COLM 2026\nFigure 8: Prompt for NarraBench template extraction\n30"
+  }
+]

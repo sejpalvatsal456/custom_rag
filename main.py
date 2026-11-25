@@ -3,68 +3,60 @@ from src.ingection.pdf_loader import load_pdf
 from src.processing.chunker import chunk_documents
 from src.embeddings.embedder import Embedder
 from src.processing.retriever import Retriever
+from src.vector_store.store import VectorStore
+from src.generation.generator import Generator
+from src.rag import RAG
 
 PDF_DIR = Path("data/documents")
 
-def show_result(results: list[dict]):
-  for result in results:
+def show_result(result: dict):
 
-    print("\n------------------------------")
+  print("\nAnswer:")
+  print(result["answer"])
 
-    print("Source:", result["source"])
-    print("Page:", result["page"])
-    print("Similarity:", round(result["similarity"], 4))
+  print("\nRetrieved sources:")
 
-    print("Content:")
-    print(result["text"])
+  for source in result["sources"]:
+    print(
+      f"- {source['source']} | "
+      f"Page {source['page']} | "
+      f"Similarity: {source['similarity']:.4f}"
+          )
 
 def main():
-  pdf_files = list(PDF_DIR.glob("*.pdf"))
-  # print(pdf_files)
+  store = VectorStore()
+  chunks, embeddings = store.load()
   
-  if not pdf_files:
-    print("No PDF files found.")
-    return
-
-  all_docs = []
-
-  for file in pdf_files:
-    print(f"Loading file: {file.name}")
-    documents = load_pdf(str(file))
-    # print(documents)
-    
-    all_docs.extend(documents)
-  
-  # print(len(all_docs))
-  chunks = chunk_documents(
-    all_docs,
-    chunk_size=1000,
-    overlap=150
-  )
-  
-  print(f"Chunks: {len(chunks)}")
+  print(f"Loaded chunks: {len(chunks)}")
+  print(f"Loaded embeddings: {embeddings.shape}")
   
   embedder = Embedder()
-  
-  texts = [chunk['text'] for chunk in chunks]
-  
-  embeddings = embedder.generate_embedding(texts)
-  print("\nEmbedding generation completed!")
-
-  print("Number of embeddings:", embeddings.shape[0])
-  print("Dimensions per embedding:", embeddings.shape[1])
-
-  print("\nFirst embedding:")
-  print(embeddings[0].shape)
-  
-  retriever = Retriever(chunks, embeddings, embedder)
-  result = retriever.retrieve(
-    query="How does GPT use gossip and rumors in storytelling?",
-    top_k=5
+  retriever = Retriever(
+    chunks=chunks,
+    embeddings=embeddings,
+    embedder=embedder
   )
   
-  show_result(result)
+  generator = Generator()
+  
+  rag = RAG(
+    retriever=retriever,
+    generator=generator
+  )
+  
+  while True:
+    query = input("\nAsk something (or type 'exit'): ")
+
+    if query.lower().strip() == "exit":
+      break
     
+    try: 
+      result = rag.ask(query=query)
+      show_result(result)
+      
+    except Exception as e:
+      print(f"Error: {e}")
     
 if __name__ == '__main__':
   main()
+  
