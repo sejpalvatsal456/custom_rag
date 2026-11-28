@@ -1,13 +1,22 @@
 from pathlib import Path
-from src.ingection.pdf_loader import load_pdf
-from src.processing.chunker import chunk_documents
-from src.embeddings.embedder import Embedder
-from src.processing.retriever import Retriever
+from src.pdf_loader import load_pdf
+from src.chunker import chunk_documents
+from src.embedder import Embedder
+from src.retriever import Retriever
 from src.vector_store.store import VectorStore
-from src.generation.generator import Generator
+from src.generator import Generator
 from src.rag import RAG
+from src.vector_store.indexer import DocumentIndexer
 
 PDF_DIR = Path("data/documents")
+
+def show_sync_summary(summary: dict):
+  print(
+    f"Sync done | added: {len(summary['added'])}, "
+    f"modified: {len(summary['modified'])}, "
+    f"deleted: {len(summary['deleted'])} | "
+    f"{summary['total_documents']} documents, {summary['total_chunks']} chunks"
+  )
 
 def show_result(result: dict):
 
@@ -24,8 +33,13 @@ def show_result(result: dict):
           )
 
 def main():
-  store = VectorStore()
-  chunks, embeddings = store.load()
+  # store = VectorStore()
+  # chunks, embeddings = store.load()
+  
+  indexer = DocumentIndexer()
+  summary = indexer.sync()
+  show_sync_summary(summary)
+  chunks, embeddings = indexer.store.load()
   
   print(f"Loaded chunks: {len(chunks)}")
   print(f"Loaded embeddings: {embeddings.shape}")
@@ -60,3 +74,14 @@ def main():
 if __name__ == '__main__':
   main()
   
+  # store = VectorStore()
+  # existing_chunks, existing_embeddings = store.load()
+  # print(f"Existing Chunks: {len(existing_chunks)}")
+  # print(f"Existing Embeddings: {len(existing_embeddings)}")
+  
+  # existing_chunk_count = {}
+  # for chunk in existing_chunks:
+  #   source = chunk['source']
+  #   existing_chunk_count[source] = existing_chunk_count.get(source, 0) + 1
+    
+  # print(existing_chunk_count)

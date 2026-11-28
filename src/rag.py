@@ -1,5 +1,5 @@
-from src.processing.retriever import Retriever
-from src.generation.generator import Generator
+from src.retriever import Retriever
+from src.generator import Generator
 
 class RAG:
   def __init__(self, retriever: Retriever, generator: Generator):

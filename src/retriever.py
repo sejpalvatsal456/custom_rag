@@ -1,6 +1,6 @@
 import numpy as np
-from src.embeddings.embedder import Embedder
-from src.processing.similarity import cosine_similarity
+from src.embedder import Embedder
+from src.similarity import cosine_similarity
 
 class Retriever:
   def __init__(self, chunks: list[dict], embeddings: np.ndarray, embedder: Embedder):
